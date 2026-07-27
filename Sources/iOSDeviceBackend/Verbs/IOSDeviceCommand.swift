@@ -48,6 +48,7 @@ public struct IOSDeviceCommand: ParsableCommand {
             IOSDeviceTapCommand.self,
             IOSDeviceSwipeCommand.self,
             IOSDeviceGestureCommand.self,
+            IOSDeviceMultiTouchCommand.self,
             IOSDeviceTypeCommand.self,
             IOSDevicePasteCommand.self,
             IOSDeviceScreenshotCommand.self,

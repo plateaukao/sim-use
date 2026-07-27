@@ -170,7 +170,6 @@ struct LongPress: SimUseExecutableCommand {
     /// Real-device dispatch: a tap with a hold duration, which is what
     /// long-press is on every backend.
     private func executeIOSDevice() throws -> ExecutionResult {
-        let client = try IOSDeviceController().client(udid: device.resolved)
         let point = try IOSDeviceTargeting.resolvePoint(
             alias: alias,
             x: targeting.pointX,
@@ -179,7 +178,18 @@ struct LongPress: SimUseExecutableCommand {
             selectorInUse: targeting.hasSelector,
             udid: device.resolved
         )
-        try client.tap(x: point.x, y: point.y, durationMilliseconds: Int((duration ?? 1.0) * 1000))
+        let hold = duration ?? 1.0
+        if multiTouch.fingers == 2 {
+            try IOSDeviceMultiTouchCommand.performTwoFingerHold(
+                udid: device.resolved,
+                finger1: point,
+                finger2: multiTouch.fingerTwoPoint(forFinger1: point),
+                duration: hold
+            )
+        } else {
+            let client = try IOSDeviceController().client(udid: device.resolved)
+            try client.tap(x: point.x, y: point.y, durationMilliseconds: Int(hold * 1000))
+        }
         return ExecutionResult(x: point.x, y: point.y)
     }
 

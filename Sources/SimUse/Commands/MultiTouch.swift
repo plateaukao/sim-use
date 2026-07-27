@@ -125,7 +125,7 @@ struct MultiTouch: SimUseExecutableCommand {
         case .android:
             return try await executeAndroid()
         case .iOSDevice:
-            throw IOSDeviceVerbSupport.unsupported("multi-touch")
+            return try await executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -160,6 +160,28 @@ struct MultiTouch: SimUseExecutableCommand {
         sub.device = device
         sub.json = json
         return sub
+    }
+
+    /// Real-device dispatch — same body as `sim-use ios-device
+    /// multi-touch`. `--steps` / `--step-ms` are Simulator-HID-specific
+    /// and silently ignored, like on Android: the bridge interpolates
+    /// each stroke at 60 Hz.
+    private func executeIOSDevice() async throws -> ExecutionResult {
+        if let preDelay, preDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(preDelay * 1_000_000_000))
+        }
+        try IOSDeviceMultiTouchCommand.performMultiTouch(
+            udid: device.resolved,
+            startP1: (x1, y1),
+            startP2: (x2, y2),
+            endP1: (x1End, y1End),
+            endP2: (x2End, y2End),
+            duration: duration
+        )
+        if let postDelay, postDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(postDelay * 1_000_000_000))
+        }
+        return ExecutionResult()
     }
 
     private func executeAndroid() async throws -> ExecutionResult {

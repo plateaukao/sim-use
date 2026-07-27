@@ -654,3 +654,131 @@ public struct IOSDeviceGestureCommand: SimUseExecutableCommand {
             """)
     }
 }
+
+/// `sim-use ios-device multi-touch` — two parallel strokes through the
+/// bridge's `/gesture`, with explicit start / end positions per finger.
+/// Mirrors the Android verb's surface so the top-level cross-platform
+/// `multi-touch` forwarder routes here with identical flag shapes.
+public struct IOSDeviceMultiTouchCommand: SimUseExecutableCommand {
+    public static let configuration = CommandConfiguration(
+        commandName: "multi-touch",
+        abstract: "Dispatch a two-finger gesture with explicit start / end positions for each finger on a real iOS device."
+    )
+
+    @OptionGroup public var device: IOSDeviceOptions
+
+    @Option(name: .customLong("x1"), help: "First finger start X (points).")
+    public var x1: Double
+
+    @Option(name: .customLong("y1"), help: "First finger start Y (points).")
+    public var y1: Double
+
+    @Option(name: .customLong("x2"), help: "Second finger start X (points).")
+    public var x2: Double
+
+    @Option(name: .customLong("y2"), help: "Second finger start Y (points).")
+    public var y2: Double
+
+    @Option(name: .customLong("x1-end"), help: "First finger end X (points).")
+    public var x1End: Double
+
+    @Option(name: .customLong("y1-end"), help: "First finger end Y (points).")
+    public var y1End: Double
+
+    @Option(name: .customLong("x2-end"), help: "Second finger end X (points).")
+    public var x2End: Double
+
+    @Option(name: .customLong("y2-end"), help: "Second finger end Y (points).")
+    public var y2End: Double
+
+    @Option(name: .customLong("duration"), help: "Gesture duration in seconds. Default 0.5.")
+    public var duration: Double = 0.5
+
+    @Flag(name: .customLong("json"), help: "Emit the unified `{ok, data: {}}` envelope on success.")
+    public var jsonOutput: Bool = false
+
+    public init() {}
+
+    public struct ExecutionResult: Codable {
+        public init() {}
+    }
+
+    public var simulatorUDIDForDaemon: String? { device.resolved }
+
+    public func validate() throws {
+        guard duration > 0 && duration <= 10.0 else {
+            throw ValidationError("--duration must be between 0 and 10 seconds.")
+        }
+    }
+
+    public mutating func resolveDeferredArguments() throws {
+        try device.resolve()
+    }
+
+    public func execute() async throws -> ExecutionResult {
+        try Self.performMultiTouch(
+            udid: device.resolved,
+            startP1: (x1, y1),
+            startP2: (x2, y2),
+            endP1: (x1End, y1End),
+            endP2: (x2End, y2End),
+            duration: duration
+        )
+        return ExecutionResult()
+    }
+
+    public func format(_ result: ExecutionResult) -> CommandOutput {
+        CommandOutput(stderr: "multi-touch (\(x1),\(y1))/(\(x2),\(y2)) → (\(x1End),\(y1End))/(\(x2End),\(y2End))\n")
+    }
+
+    /// Reusable device multi-touch entry point; the top-level
+    /// cross-platform `MultiTouch` forwards here. Symmetric to
+    /// `AndroidMultiTouchCommand.performMultiTouch` — same two-stroke
+    /// shape, no display-bounds pre-flight (iOS clamps silently; see
+    /// `IOSDeviceGestureCommand.performGesture`).
+    public static func performMultiTouch(
+        udid: String,
+        startP1: (x: Double, y: Double),
+        startP2: (x: Double, y: Double),
+        endP1: (x: Double, y: Double),
+        endP2: (x: Double, y: Double),
+        duration: Double,
+        controller: IOSDeviceController = IOSDeviceController()
+    ) throws {
+        let client = try controller.client(udid: udid)
+        let durationMs = max(1, Int((duration * 1000).rounded()))
+        try client.gesture(strokes: [
+            .linear(
+                startX: startP1.x, startY: startP1.y,
+                endX: endP1.x, endY: endP1.y,
+                startTime: 0, duration: durationMs
+            ),
+            .linear(
+                startX: startP2.x, startY: startP2.y,
+                endX: endP2.x, endY: endP2.y,
+                startTime: 0, duration: durationMs
+            ),
+        ])
+    }
+
+    /// Two-finger tap / long-press: both fingers hold at their start
+    /// positions. `start == end` with a real duration is the same
+    /// pattern every backend uses to surface a hold to recognisers.
+    /// Used by the top-level `tap --fingers 2` / `long-press
+    /// --fingers 2` device paths.
+    public static func performTwoFingerHold(
+        udid: String,
+        finger1: (x: Double, y: Double),
+        finger2: (x: Double, y: Double),
+        duration: Double?,
+        controller: IOSDeviceController = IOSDeviceController()
+    ) throws {
+        try performMultiTouch(
+            udid: udid,
+            startP1: finger1, startP2: finger2,
+            endP1: finger1, endP2: finger2,
+            duration: duration ?? 0.05,
+            controller: controller
+        )
+    }
+}

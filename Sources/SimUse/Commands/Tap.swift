@@ -189,7 +189,6 @@ struct Tap: SimUseExecutableCommand {
     /// need a live point-query the bridge does not expose, so they get
     /// a targeted error rather than silently tapping the wrong thing.
     private func executeIOSDevice() throws -> ExecutionResult {
-        let client = try IOSDeviceController().client(udid: device.resolved)
         let point = try IOSDeviceTargeting.resolvePoint(
             alias: alias,
             x: targeting.pointX,
@@ -198,7 +197,17 @@ struct Tap: SimUseExecutableCommand {
             selectorInUse: targeting.hasSelector,
             udid: device.resolved
         )
-        try client.tap(x: point.x, y: point.y, durationMilliseconds: duration.map { Int($0 * 1000) })
+        if multiTouch.fingers == 2 {
+            try IOSDeviceMultiTouchCommand.performTwoFingerHold(
+                udid: device.resolved,
+                finger1: point,
+                finger2: multiTouch.fingerTwoPoint(forFinger1: point),
+                duration: duration
+            )
+        } else {
+            let client = try IOSDeviceController().client(udid: device.resolved)
+            try client.tap(x: point.x, y: point.y, durationMilliseconds: duration.map { Int($0 * 1000) })
+        }
         return ExecutionResult(x: point.x, y: point.y)
     }
 
