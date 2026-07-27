@@ -59,40 +59,67 @@ public enum IOSDeviceScreenRecorder {
         )
     }
 
-    /// The capture device's `uniqueID` is the phone's UDID, with hyphen
-    /// presence varying across macOS releases — normalise both sides.
+    /// One 50 ms slice of the main run loop. Synchronous on purpose:
+    /// Swift marks `CFRunLoopRunInMode` unavailable from async contexts
+    /// because blocking a cooperative thread is usually a bug — here it
+    /// is the point. `record()` is main-actor-bound and the DAL
+    /// plugin's device/property callbacks arrive on this run loop, so
+    /// the waits must service it, exactly as an AVFoundation app would.
+    @MainActor
+    private static func pumpMainRunLoop() {
+        CFRunLoopRunInMode(.defaultMode, 0.05, true)
+    }
+
+    /// On older macOS the capture device's `uniqueID` was the phone's
+    /// UDID; normalise hyphens/case for that comparison.
     static func normalizedID(_ raw: String) -> String {
         raw.replacingOccurrences(of: "-", with: "").lowercased()
     }
 
-    static func findCaptureDevice(udid: String, timeout: TimeInterval) async throws -> AVCaptureDevice {
-        let wanted = normalizedID(udid)
-        let deadline = Date().addingTimeInterval(timeout)
+    /// Discovery MUST pump the main run loop: the iOSScreenCapture DAL
+    /// plugin delivers device arrivals through run-loop callbacks, so a
+    /// thread that merely sleeps sees an empty device list forever —
+    /// that failure mode looks exactly like "macOS refuses this phone"
+    /// and cost a wrong diagnosis once. Runs on the main actor so the
+    /// pumped loop is the one the plugin registered with.
+    ///
+    /// Matching, in order: `uniqueID` == UDID (older macOS published it
+    /// that way); the device's name as reported by devicectl (current
+    /// macOS mints a fresh UUID for `uniqueID`, and the name is the only
+    /// surfaced link back to the phone); after a settling period, a
+    /// *sole* connected iOS device is accepted with a note.
+    @MainActor
+    static func findCaptureDevice(udid: String, deviceName: String?, timeout: TimeInterval) throws -> AVCaptureDevice {
+        let wantedID = normalizedID(udid)
+        let start = Date()
+        let deadline = start.addingTimeInterval(timeout)
+        let singletonFallbackAfter = start.addingTimeInterval(2)
         repeat {
+            CFRunLoopRunInMode(.defaultMode, 0.05, true)
             let discovered = AVCaptureDevice.DiscoverySession(
                 deviceTypes: [.external],
                 mediaType: nil,
                 position: .unspecified
             ).devices
-            if let match = discovered.first(where: { normalizedID($0.uniqueID) == wanted }) {
+            if let match = discovered.first(where: { normalizedID($0.uniqueID) == wantedID }) {
                 return match
             }
-            try await Task.sleep(nanoseconds: 250_000_000)
+            if let deviceName, let match = discovered.first(where: { $0.localizedName == deviceName }) {
+                return match
+            }
+            let iosDevices = discovered.filter { $0.modelID == "iOS Device" }
+            if iosDevices.count == 1, Date() >= singletonFallbackAfter, let only = iosDevices.first {
+                FileHandle.standardError.write(Data(
+                    "note: matching by sole connected iOS capture device (\(only.localizedName))\n".utf8
+                ))
+                return only
+            }
         } while Date() < deadline
         throw CLIError(errorDescription: """
-            \(udid) is not visible to macOS as a screen-capture device. In order of likelihood:
-
-              1. The device is not on USB. Screen capture rides CoreMediaIO, which does not \
-            see Wi-Fi-connected phones — plug the cable in, tap Trust if prompted, and retry.
-              2. Another app already holds it (QuickTime, OBS, …). Stop that recording first.
-              3. This macOS does not support screen capture from this device. macOS gates it \
-            per device model/OS pairing, and a phone running a major iOS release newer than \
-            the host macOS can be refused outright.
-
-            Quick way to tell 1/2 from 3: open QuickTime Player → File → New Movie Recording \
-            and look for the device in the camera-source menu. If QuickTime cannot see it \
-            either, it is (3) and no tool on this Mac can record it — use `screenshot`, or \
-            record from the device itself (Control Center → Screen Recording).
+            \(udid) is not visible to macOS as a screen-capture device. Screen recording \
+            needs the phone on **USB** (a Wi-Fi connection is not enough) — plug the cable \
+            in, tap Trust if prompted, and retry. If another app is already capturing it \
+            (QuickTime, OBS, …), stop that recording first.
             """)
     }
 
@@ -119,6 +146,7 @@ public enum IOSDeviceScreenRecorder {
 
     // MARK: - Recording
 
+    @MainActor
     public static func record(
         udid: String,
         fps: Int?,
@@ -133,7 +161,10 @@ public enum IOSDeviceScreenRecorder {
 
         allowScreenCaptureDevices()
         try await ensureCameraAccess()
-        let device = try await findCaptureDevice(udid: udid, timeout: deviceDiscoveryTimeout)
+        // The capture device's uniqueID no longer carries the UDID, so
+        // the phone's name is the identifying link — fetch it up front.
+        let deviceName = (try? DeviceCtl().devices())?.first { $0.udid == udid }?.name
+        let device = try findCaptureDevice(udid: udid, deviceName: deviceName, timeout: deviceDiscoveryTimeout)
 
         let session = AVCaptureSession()
         let input: AVCaptureDeviceInput
@@ -193,6 +224,14 @@ public enum IOSDeviceScreenRecorder {
         session.startRunning()
         defer { if session.isRunning { session.stopRunning() } }
 
+        // Both waits alternate a run-loop slice with a task yield. The
+        // pump services the DAL plugin's device/property events (which
+        // are run-loop-delivered, same as during discovery); the yield
+        // releases the main *dispatch* queue so `SignalObserver`'s
+        // handler — a main-queue DispatchSource — can set the
+        // cancellation flag. Pumping alone starves that handler and
+        // Ctrl+C never lands; that exact hang happened on first live
+        // test.
         // First frame proves the pipeline is live (and sizes the writer).
         let firstFrameDeadline = Date().addingTimeInterval(firstFrameTimeout)
         while !sink.firstFrameSeen.isCancelled() {
@@ -204,11 +243,13 @@ public enum IOSDeviceScreenRecorder {
                     then retry.
                     """)
             }
-            try? await cancellableSleep(seconds: 0.05, flag: cancellationFlag)
+            pumpMainRunLoop()
+            await Task.yield()
         }
 
         while !cancellationFlag.isCancelled() && !sink.stopped.isCancelled() && !disconnected.isCancelled() {
-            try? await cancellableSleep(seconds: 0.05, flag: cancellationFlag)
+            pumpMainRunLoop()
+            await Task.yield()
         }
 
         sink.stopAppending()
