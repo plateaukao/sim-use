@@ -205,7 +205,11 @@ struct Paste: SimUseExecutableCommand {
     }
 
     /// Real-device dispatch: pasteboard write plus a synthesized Cmd+V,
-    /// the same mechanism the Simulator backend uses.
+    /// through the same verified entry point as `sim-use ios-device
+    /// paste` — a paste the device demonstrably ignored exits non-zero
+    /// with the pasteboard-vs-field distinction spelled out. (An
+    /// earlier cut dropped the bridge's verification result here and
+    /// reported success unconditionally.)
     private func executeIOSDevice() throws -> ExecutionResult {
         if viaMenu {
             throw CLIError(errorDescription: "--via-menu is Simulator-only. On a real device the bridge delivers Cmd+V directly; pass the text (with --replace to overwrite).")
@@ -217,8 +221,12 @@ struct Paste: SimUseExecutableCommand {
         guard !inputText.isEmpty else {
             throw CLIError(errorDescription: "Input text is empty; nothing to paste.")
         }
-        let client = try IOSDeviceController().client(udid: device.resolved)
-        _ = try client.paste(text: inputText, replace: replace, clipboardOnly: false)
+        _ = try IOSDevicePasteCommand.performPaste(
+            udid: device.resolved,
+            text: inputText,
+            replace: replace,
+            clipboardOnly: false
+        )
         return ExecutionResult()
     }
 

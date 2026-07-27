@@ -216,16 +216,23 @@ Supported: `describe-ui` / `ui`, `tap`, `long-press` (including `--fingers 2`),
 `multi-touch`, `type`, `screenshot`, `keyboard-state`, `button` (home, lock,
 volume).
 
-`paste` is **clipboard-only** on real devices. It reliably puts text on the
-device pasteboard, but iOS will not apply a synthesized Cmd+V: those key events
-arrive on the text-input stream as characters and never become the
-`UIKeyCommand` UIKit needs to run a paste. (The Simulator backend injects below
-that boundary, at the HID level, which is why the same verb works there.)
-Verified on iOS 27 with both the system keyboard and a third-party IME, and via
-a synthesized long-press — no edit menu appears either. Rather than claim
-success, `paste` verifies the field afterwards and exits non-zero with an
-explanation if the text did not land; use `--clipboard-only` when staging text
-deliberately, and `type` for anything the keyboard can produce.
+`paste` is **best-effort** on real devices. It reliably puts text on the
+device pasteboard, but whether the synthesized Cmd+V then runs a paste depends
+on the surface: in ordinary apps the key events arrive on the text-input
+stream as characters and never become the `UIKeyCommand` UIKit needs (verified
+on iOS 27 with both the system keyboard and a third-party IME, and via a
+synthesized long-press — no edit menu either), while some system surfaces
+(Spotlight on iOS 27) do honour it and raise the iOS "Allow Paste" consent
+alert, which appears in `describe-ui` and can be tapped like any other button.
+Two more real-device caveats: **Universal Clipboard can shadow the staged
+text** — on a device paired with a Mac, the consent alert may name the Mac and
+the paste deliver the *Mac's* clipboard instead of what `paste` wrote — and
+the field verification can come back unreadable on out-of-process surfaces.
+Rather than claim success, `paste` verifies the field afterwards and exits
+non-zero with an explanation if the text demonstrably did not land (an
+unverifiable paste is reported as such, not as success); use
+`--clipboard-only` when staging text deliberately, and `type` for anything the
+keyboard can produce.
 
 `keyboard-state` reports how it detected the keyboard. With a third-party
 keyboard extension active it answers `soft (bounds unknown — out-of-process

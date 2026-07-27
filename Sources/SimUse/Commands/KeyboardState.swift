@@ -99,7 +99,18 @@ struct KeyboardState: SimUseExecutableCommand {
     }
 
     func format(_ result: ExecutionResult) -> CommandOutput {
-        .line(result.visible ? "soft" : "hidden")
+        guard result.visible else { return .line("hidden") }
+        // Real-device answers carry occlusion geometry (or an explicit
+        // "we can't know" for out-of-process keyboard extensions) —
+        // render them exactly like `sim-use ios-device keyboard-state`
+        // so the two surfaces never disagree.
+        if let top = result.top {
+            return .line("soft (occludes below y=\(Int(top)))")
+        }
+        if result.detection == "focus" {
+            return .line("soft (bounds unknown — out-of-process keyboard extension)")
+        }
+        return .line("soft")
     }
 
     // No custom `run()`: the exit-code contract this command needs —
@@ -119,11 +130,21 @@ struct KeyboardState: SimUseExecutableCommand {
 
     /// Real-device dispatch. The bridge finds the keyboard by element
     /// type in the accessibility tree, so there are no key-count
-    /// heuristics to report the way the Simulator path has.
+    /// heuristics to report the way the Simulator path has — instead it
+    /// reports which detection signal answered, the owning bundle, and
+    /// the occlusion edge, all of which must survive the forwarding
+    /// (an earlier cut kept only `visible`, silently downgrading the
+    /// answer relative to `sim-use ios-device keyboard-state`).
     private func executeIOSDevice() throws -> ExecutionResult {
         let client = try IOSDeviceController().client(udid: device.resolved)
         let state = try client.keyboardState()
-        return ExecutionResult(platform: "ios-device", visible: state.visible)
+        return ExecutionResult(
+            platform: "ios-device",
+            visible: state.visible,
+            owner: state.owner,
+            top: state.frame?.y,
+            detection: state.detection
+        )
     }
 
 }

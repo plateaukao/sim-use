@@ -288,7 +288,25 @@ public struct IOSDevicePasteCommand: SimUseExecutableCommand {
     }
 
     public func execute() async throws -> ExecutionResult {
-        let client = try IOSDeviceController().client(udid: device.resolved)
+        try Self.performPaste(
+            udid: device.resolved,
+            text: text,
+            replace: replace,
+            clipboardOnly: clipboardOnly
+        )
+    }
+
+    /// Reusable device paste entry point; the top-level cross-platform
+    /// `paste` forwards here so both surfaces share the verification
+    /// contract below.
+    public static func performPaste(
+        udid: String,
+        text: String,
+        replace: Bool,
+        clipboardOnly: Bool,
+        controller: IOSDeviceController = IOSDeviceController()
+    ) throws -> ExecutionResult {
+        let client = try controller.client(udid: udid)
         let result = try client.paste(text: text, replace: replace, clipboardOnly: clipboardOnly)
         // A paste the device demonstrably ignored is a failure, not a
         // footnote. Reporting it as success is how `example.comå√` got

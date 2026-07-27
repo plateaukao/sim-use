@@ -25,6 +25,11 @@ public struct IOSSimKeyboardStateCommand: SimUseExecutableCommand {
         public let idChromeCount: Int?
         public let globeSeen: Bool?
         public let imePackage: String?
+        // Real-device (`ios-device`) fields — see
+        // `IOSDeviceKeyboardStateCommand.ExecutionResult` for meaning.
+        public let owner: String?
+        public let top: Double?
+        public let detection: String?
 
         public init(
             platform: String,
@@ -33,7 +38,10 @@ public struct IOSSimKeyboardStateCommand: SimUseExecutableCommand {
             letterKeyCount: Int? = nil,
             idChromeCount: Int? = nil,
             globeSeen: Bool? = nil,
-            imePackage: String? = nil
+            imePackage: String? = nil,
+            owner: String? = nil,
+            top: Double? = nil,
+            detection: String? = nil
         ) {
             self.platform = platform
             self.visible = visible
@@ -42,10 +50,13 @@ public struct IOSSimKeyboardStateCommand: SimUseExecutableCommand {
             self.idChromeCount = idChromeCount
             self.globeSeen = globeSeen
             self.imePackage = imePackage
+            self.owner = owner
+            self.top = top
+            self.detection = detection
         }
 
         enum CodingKeys: String, CodingKey {
-            case platform, visible, chromeKeyCount, letterKeyCount, idChromeCount, globeSeen, imePackage
+            case platform, visible, chromeKeyCount, letterKeyCount, idChromeCount, globeSeen, imePackage, owner, top, detection
         }
 
         public func encode(to encoder: Encoder) throws {
@@ -61,6 +72,9 @@ public struct IOSSimKeyboardStateCommand: SimUseExecutableCommand {
             try c.encodeIfPresent(idChromeCount, forKey: .idChromeCount)
             try c.encodeIfPresent(globeSeen, forKey: .globeSeen)
             try c.encodeIfPresent(imePackage, forKey: .imePackage)
+            try c.encodeIfPresent(owner, forKey: .owner)
+            try c.encodeIfPresent(top, forKey: .top)
+            try c.encodeIfPresent(detection, forKey: .detection)
         }
     }
 
