@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `swipe` verb. Owns the verb-specific flag
@@ -74,6 +75,8 @@ struct Swipe: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try await executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -125,4 +128,21 @@ struct Swipe: SimUseExecutableCommand {
         }
         return ExecutionResult(coordinates: coords)
     }
+
+    /// Real-device dispatch. Coordinates are already in the point space
+    /// the bridge expects, so no rounding to pixels the way the Android
+    /// path needs.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let coords = try coordinates.resolve()
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        try client.swipe(
+            startX: Double(coords.roundedStartX),
+            startY: Double(coords.roundedStartY),
+            endX: Double(coords.roundedEndX),
+            endY: Double(coords.roundedEndY),
+            durationMilliseconds: max(1, Int((duration ?? 0.3) * 1000))
+        )
+        return ExecutionResult(coordinates: coords)
+    }
+
 }

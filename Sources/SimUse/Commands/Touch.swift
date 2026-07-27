@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `touch` verb. Owns the flag surface and
@@ -96,6 +97,8 @@ struct Touch: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            throw IOSDeviceVerbSupport.unsupported("touch")
         case .iOSSim, .none:
             return try await executeIOSSim()
         }

@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `long-press` verb. Mirrors `Tap`'s entire
@@ -102,6 +103,8 @@ struct LongPress: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -163,4 +166,21 @@ struct LongPress: SimUseExecutableCommand {
         )
         return ExecutionResult(x: Double(result.x), y: Double(result.y))
     }
+
+    /// Real-device dispatch: a tap with a hold duration, which is what
+    /// long-press is on every backend.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        let point = try IOSDeviceTargeting.resolvePoint(
+            alias: alias,
+            x: targeting.pointX,
+            y: targeting.pointY,
+            point: targeting.point,
+            selectorInUse: targeting.hasSelector,
+            udid: device.resolved
+        )
+        try client.tap(x: point.x, y: point.y, durationMilliseconds: Int((duration ?? 1.0) * 1000))
+        return ExecutionResult(x: point.x, y: point.y)
+    }
+
 }

@@ -8,7 +8,11 @@ struct InitTests {
     func printOutputsSkill() async throws {
         let result = try await TestHelpers.runSimUseCommand("init --print")
         #expect(result.output.contains("name: sim-use"))
-        #expect(result.output.contains("Drive iOS Simulator and Android"))
+        // Matches the three platforms the skill front-matter advertises;
+        // the phrasing between them is free to change.
+        #expect(result.output.contains("Drive iOS Simulator"))
+        #expect(result.output.contains("real iPhone/iPad"))
+        #expect(result.output.contains("Android"))
     }
 
     @Test("installs skill to custom destination")

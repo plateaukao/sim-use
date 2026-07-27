@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `screenshot` verb. Owns the flag surface
@@ -51,6 +52,8 @@ struct Screenshot: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -105,4 +108,17 @@ struct Screenshot: SimUseExecutableCommand {
         }
         return absolute
     }
+
+    /// Real-device dispatch. Reuses the Android output-path rules so
+    /// `--output` behaves identically across the three backends.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        let png = try client.screenshot()
+        let path = resolveAndroidOutputPath(serial: device.resolved)
+        let url = URL(fileURLWithPath: path)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try png.write(to: url)
+        return ExecutionResult(path: url.path)
+    }
+
 }

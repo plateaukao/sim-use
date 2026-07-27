@@ -65,22 +65,31 @@ After any non-trivial change, at minimum:
 
 ## Module layout
 
-Four SwiftPM targets; dependency graph flows in one direction.
+Five SwiftPM targets; dependency graph flows in one direction.
 
 | Target | Path | Depends on |
 |---|---|---|
 | `SimUseCore` | `Sources/SimUseCore/` | Foundation + ArgumentParser |
 | `iOSSimBackend` | `Sources/iOSSimBackend/` | SimUseCore + FB* XCFrameworks + AVFoundation |
 | `AndroidBackend` | `Sources/AndroidBackend/` | SimUseCore + ArgumentParser |
-| `SimUse` (executable) | `Sources/SimUse/` | SimUseCore + iOSSimBackend + AndroidBackend + FB* |
+| `iOSDeviceBackend` | `Sources/iOSDeviceBackend/` | SimUseCore + iOSSimBackend + ArgumentParser |
+| `SimUse` (executable) | `Sources/SimUse/` | SimUseCore + iOSSimBackend + iOSDeviceBackend + AndroidBackend + FB* |
+
+`iOSDeviceBackend` (real iPhones / iPads) depends on `iOSSimBackend` on
+purpose: the on-device bridge emits the Simulator's accessibility-tree shape,
+so `OutlineFormatter`, `ListDetector`, and every selector are shared rather
+than reimplemented.
 
 ### Verb dispatch
 
-A verb (tap, swipe, type, ...) reaches three surfaces:
+A verb (tap, swipe, type, ...) reaches up to four surfaces:
 
-1. **Top-level** — `Sources/SimUse/Commands/<Verb>.swift`. Resolves the target via `PlatformRouter`, then forwards to the iOS or Android backend.
+1. **Top-level** — `Sources/SimUse/Commands/<Verb>.swift`. Resolves the target via `PlatformRouter`, then forwards to the matching backend.
 2. **`sim-use ios <verb>`** — `Sources/iOSSimBackend/Verbs/IOSSim<Verb>Command.swift`.
 3. **`sim-use android <verb>`** — `Sources/AndroidBackend/Verbs/Android<Verb>Command.swift`.
+4. **`sim-use ios-device <verb>`** — `Sources/iOSDeviceBackend/Verbs/` (real devices; grouped by lifecycle vs interaction rather than one file per verb).
+
+`PlatformRouter.resolve` returns `.iOSSim` / `.android` / `.iOSDevice`; adding a case makes every top-level switch non-exhaustive, which is how you find all the forwarders that need updating.
 
 Five verbs are iOS-only (`key`, `key-combo`, `key-sequence`, `stream-video`, `batch`) — no top-level alias.
 
@@ -93,6 +102,31 @@ Five verbs are iOS-only (`key`, `key-combo`, `key-sequence`, `stream-video`, `ba
 ### Daemon
 
 `SimUseExecutableCommand.run()` forwards UDID-scoped verbs to a per-UDID auto-spawned daemon (`Sources/SimUseCore/Daemon/`). Platform-agnostic — both iOS and Android verbs route through it. Key regression test: `Tests/DaemonCommandParserInjectionTests.swift`.
+
+## Real iOS device development
+
+`ios-bridge/` is an Xcode project for the on-device XCUITest bridge — the iOS
+counterpart of `bridge/`, but shaped differently because iOS only grants
+cross-app accessibility to a test runner. Read `ios-bridge/README.md` before
+touching it; the SPI shims in `xcui/SimUsePrivateAPI.m` are the version-fragile
+part.
+
+```bash
+scripts/build-ios-bridge.sh --check     # verify Xcode / signing prerequisites
+scripts/build-ios-bridge.sh --compile   # compile-check, no signing or device needed
+scripts/build-ios-bridge.sh --generate  # regenerate the .xcodeproj (needs xcodegen)
+make ios-bridge                         # = --compile
+```
+
+`make build` / `make test` stage `ios-bridge/` into the gitignored SwiftPM
+resource path automatically. Bump `BridgeVersion.protocolVersion` (Swift, in
+the runner) and `IOSDeviceBridgeClient.expectedProtocolVersion` (host) together
+on breaking wire changes — this is a separate lineage from the Android bridge's
+`PROTOCOL_VERSION`.
+
+Testing against a real device needs the phone **unlocked**, Developer Mode on,
+and an Apple Development team (`--team-id` or `SIM_USE_IOS_TEAM_ID`).
+`GET /diag` on the running bridge reports which XCUIAutomation SPI resolved.
 
 ## Android development
 

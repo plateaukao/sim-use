@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Tests](https://github.com/lycorp-jp/sim-use/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/lycorp-jp/sim-use/actions/workflows/tests.yml)
 
-Give AI agents the ability to observe and act on iOS Simulator and Android emulator / device screens.
+Give AI agents the ability to observe and act on iOS Simulator, real iPhone / iPad, and Android emulator / device screens.
 
 **Observe** — turn any screen into a token-efficient outline an LLM can reason about:
 
@@ -148,12 +148,92 @@ sim-use init --uninstall --client claude
 
 ## Platforms
 
-sim-use drives both **iOS Simulators** and **Android devices / emulators** through the same command surface. The device ID shape decides which backend handles the call:
+sim-use drives **iOS Simulators**, **Android devices / emulators**, and **real iPhones / iPads** through the same command surface. The device ID shape decides which backend handles the call:
 
-  * `1A2B3C4D-...` (UUID) → iOS Simulator
+  * `1A2B3C4D-5E6F-...` (8-4-4-4-12 UUID) → iOS Simulator
   * `emulator-5554` / `R5CT1ABCD12` / `192.168.1.5:5555` → Android device
+  * `00008150-000E242411D9401C` (8-16 hex, or 40 hex on pre-A12 hardware) → real iOS device
 
-For Android, run `sim-use android init --device <serial>` once to install the bridge APK. See `AGENTS.md` for Android toolchain setup.
+Each non-simulator platform needs a one-time bootstrap:
+
+  * **Android** — `sim-use android init --device <serial>` installs the bridge APK. See `AGENTS.md` for toolchain setup.
+  * **Real iOS device** — `sim-use ios-device init` builds and starts the on-device bridge. See [Real iOS devices](#real-ios-devices) below.
+
+
+
+## Real iOS devices
+
+sim-use drives a physical iPhone or iPad through an **on-device XCUITest bridge**
+(`ios-bridge/`). Once it is running, the ordinary verbs work against the phone
+exactly as they do against a simulator — same outline format, same `@N` aliases,
+same `--json` envelopes:
+
+```bash
+sim-use ios-device init --team-id ABCDE12345   # build + start the bridge
+sim-use devices                                # the phone now appears as `ios-device`
+
+DEVICE=00008150-000E242411D9401C
+sim-use ui   --device "$DEVICE"
+sim-use tap  @3 --device "$DEVICE"
+sim-use type "hello" --device "$DEVICE"
+sim-use screenshot --device "$DEVICE"
+
+sim-use ios-device stop                        # end the session
+```
+
+### How it differs from Android — and why
+
+Android's bridge is a prebuilt APK you install once. iOS cannot work that way,
+and the differences below all trace back to one platform fact: **iOS grants
+cross-app accessibility and event injection only to a process `testmanagerd` is
+supervising** — an XCUITest runner — and only for as long as its test method is
+running. (WebDriverAgent exists for the same reason.)
+
+  * **You must sign it yourself.** There is no universally-installable prebuilt
+    runner; the bridge ships as source and `init` builds it with your Apple
+    Development team. Pass `--team-id`, set `SIM_USE_IOS_TEAM_ID`, or have
+    exactly one `Apple Development` identity in your keychain.
+  * **The session is a live host process.** `init` leaves an `xcodebuild
+    test-without-building` running; the bridge dies with it. `sim-use ios-device
+    status` reports whether it is still up.
+  * **The device must be unlocked** when `init` runs — iOS refuses to launch a
+    test runner on a locked device. For long sessions set Auto-Lock to Never.
+  * **Developer Mode must be on** (Settings → Privacy & Security → Developer
+    Mode), and the Mac must be trusted.
+
+### Requirements
+
+Xcode 15+ (verified on Xcode 26 / iOS 27), an Apple Development signing
+identity, and a paired device on USB or the same Wi-Fi network. USB is
+preferred — sim-use reaches the phone through `usbmuxd` directly, with no port
+forwarding to manage; Wi-Fi is used automatically when the device is not
+plugged in.
+
+### Verb coverage
+
+Supported: `describe-ui` / `ui`, `tap`, `long-press`, `swipe`, `type`,
+`screenshot`, `keyboard-state`, `button` (home, lock, volume).
+
+`paste` is **clipboard-only** on real devices. It reliably puts text on the
+device pasteboard, but iOS will not apply a synthesized Cmd+V: those key events
+arrive on the text-input stream as characters and never become the
+`UIKeyCommand` UIKit needs to run a paste. (The Simulator backend injects below
+that boundary, at the HID level, which is why the same verb works there.)
+Verified on iOS 27 with both the system keyboard and a third-party IME, and via
+a synthesized long-press — no edit menu appears either. Rather than claim
+success, `paste` verifies the field afterwards and exits non-zero with an
+explanation if the text did not land; use `--clipboard-only` when staging text
+deliberately, and `type` for anything the keyboard can produce.
+
+`keyboard-state` reports how it detected the keyboard. With a third-party
+keyboard extension active it answers `soft (bounds unknown — out-of-process
+keyboard extension)`: the keyboard is up, but an extension running in its own
+process exposes no elements to read bounds from.
+
+Not yet on real devices: `gesture`, `multi-touch`, `touch`, `record-video`, and
+the live AX selectors (`--label`, `--id`, `--element-type`) — those need a
+point-query the bridge does not expose, so they raise a clear error rather than
+falling back to a stale cached frame. Use `describe-ui` aliases (`@3`) instead.
 
 
 ## Commands
@@ -163,6 +243,7 @@ All device-scoped commands accept `--device <ID>` (optional when only one simula
   * **Top-level** — cross-platform verbs: `ui`, `tap`, `swipe`, `type`, `paste`, `button`, `gesture`, `keyboard-state`, `screenshot`, `record-video`, `app-state`. Same flags on iOS and Android.
   * **`sim-use ios <verb>`** — iOS-only: `key`, `key-combo`, `key-sequence`, `stream-video`, `batch`.
   * **`sim-use android <verb>`** — Android-only: `init`, `devices`, `ping`.
+  * **`sim-use ios-device <verb>`** — real-device-only: `init`, `stop`, `status`, `devices`.
 
 Run `sim-use --help` or `sim-use <command> --help` for the full flag set.
 
@@ -391,7 +472,7 @@ Daemons self-exit after 600 s of idle and log to `/tmp/sim-use-<uid>/<UDID>.log`
 
 ## Architecture
 
-sim-use drives iOS Simulators through the lower-level XCFrameworks of Facebook's [idb](https://github.com/facebook/idb), Apple's Accessibility APIs, and the simulator HID pipeline. Android devices are driven through an on-device bridge APK that exposes the AccessibilityService tree and input injection over HTTP, tunnelled via `adb forward`.
+sim-use drives iOS Simulators through the lower-level XCFrameworks of Facebook's [idb](https://github.com/facebook/idb), Apple's Accessibility APIs, and the simulator HID pipeline. Android devices are driven through an on-device bridge APK that exposes the AccessibilityService tree and input injection over HTTP, tunnelled via `adb forward`. Real iOS devices are driven through an on-device XCUITest bridge (`ios-bridge/`) that serves the same HTTP protocol over usbmux or TCP; because it emits the Simulator's accessibility-tree shape, the outline renderer and every selector are shared between the two iOS backends.
 
 - **Single binary, single invocation.** No RPC daemon to manage manually; the optional per-UDID background daemon is auto-spawned and opt-out (`SIM_USE_NO_DAEMON=1`).
 - **Agent-first output.** `ui` emits a compact outline with stable `@N` / `#<id>` aliases designed to round-trip between an LLM and the simulator with minimal token cost.

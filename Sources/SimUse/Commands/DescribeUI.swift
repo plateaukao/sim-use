@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `describe-ui` verb. Owns the flag surface
@@ -103,6 +104,8 @@ struct DescribeUI: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -157,4 +160,27 @@ struct DescribeUI: SimUseExecutableCommand {
             crashDialog: result.crashDialog
         )
     }
+
+    /// Real-device dispatch. The bridge returns the same AX tree shape
+    /// the Simulator does, so this reuses the identical renderer and
+    /// only has to reshape the cross-platform `DescribeUIResult` into
+    /// this command's local envelope — the same move `executeAndroid`
+    /// makes.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let result = try IOSDeviceController().describeUI(
+            udid: device.resolved,
+            includeRaw: json.enabled
+        )
+        return ExecutionResult(
+            platform: result.platform.rawValue,
+            raw: result.raw,
+            outline: result.outline,
+            entries: result.entries,
+            lists: result.lists,
+            screen: result.screen,
+            appLabel: result.appLabel,
+            appPackage: result.appPackage
+        )
+    }
+
 }

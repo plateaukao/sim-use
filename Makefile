@@ -1,4 +1,4 @@
-.PHONY: help build test e2e e2e-ios e2e-android eval clean viewer sync-skills
+.PHONY: help build test e2e e2e-ios e2e-android eval clean viewer sync-skills sync-ios-bridge
 
 # pipefail below needs bash; macOS /bin/sh is bash-in-posix-mode but
 # being explicit costs nothing.
@@ -27,6 +27,7 @@ help:
 	@echo "Common sim-use commands"
 	@echo "  make build   Build sim-use"
 	@echo "  make viewer  Rebuild the Viewer SPA into Sources/SimUse/Resources/viewer/"
+	@echo "  make ios-bridge   Compile-check the on-device iOS bridge runner (no signing needed)"
 	@echo "  make test    Run unit tests (no simulator needed)"
 	@echo "  make e2e     Run BOTH iOS + Android E2E suites in sequence (~15 min iOS alone)"
 	@echo "  make e2e-ios      Run iOS E2E tests on a booted simulator (~15 min for a full green run)"
@@ -41,7 +42,19 @@ help:
 sync-skills:
 	@rsync -a --delete skills/sim-use/ Sources/SimUse/Resources/skills/sim-use/
 
-build: sync-skills
+# The iOS device bridge ships as *source*, staged into the gitignored
+# SwiftPM resource path, because an XCUITest runner has to be signed by
+# the user's own team — there is no prebuilt equivalent of the Android
+# APK. `sim-use ios-device init` builds it on the user's machine.
+sync-ios-bridge:
+	@./scripts/build-ios-bridge.sh
+
+# Compile-check the runner against the Simulator SDK. Signing-free, so
+# it works in CI and on machines with no paired device.
+ios-bridge:
+	@./scripts/build-ios-bridge.sh --compile
+
+build: sync-skills sync-ios-bridge
 	@$(call run_swift,swift build)
 
 # Refresh the Viewer SPA resource bundle. The output is committed so
@@ -54,7 +67,7 @@ viewer:
 # Coverage is always collected so the command behaves identically
 # with and without xcsift; the report only renders when xcsift is
 # there to read it.
-test: sync-skills
+test: sync-skills sync-ios-bridge
 	@$(call run_swift,swift test --enable-code-coverage,--coverage)
 
 # Run both platforms in sequence (iOS then Android), continuing past a

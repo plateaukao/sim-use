@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Cross-platform device listing. Successor to the legacy
@@ -64,12 +65,15 @@ struct Devices: SimUseExecutableCommand {
         // and vice versa.
         async let iosFuture = listIOS()
         async let androidFuture = listAndroid()
+        async let iosDeviceFuture = listIOSDevices()
         let iosResult = await iosFuture
         let androidResult = await androidFuture
+        let iosDeviceResult = await iosDeviceFuture
 
         var combined: [Device] = []
-        if platform != .android { combined.append(contentsOf: iosResult.devices) }
-        if platform != .ios     { combined.append(contentsOf: androidResult.devices) }
+        if platform != .android && platform != .iosDevice { combined.append(contentsOf: iosResult.devices) }
+        if platform != .ios && platform != .iosDevice     { combined.append(contentsOf: androidResult.devices) }
+        if platform != .ios && platform != .android       { combined.append(contentsOf: iosDeviceResult.devices) }
 
         if !includeAll {
             combined = combined.filter { $0.isUsable }
@@ -117,6 +121,22 @@ struct Devices: SimUseExecutableCommand {
             return SideResult(devices: devices, failed: false)
         } catch {
             FileHandle.standardError.write(Data("warning: iOS device listing failed: \(error.localizedDescription)\n".utf8))
+            return SideResult(devices: [], failed: true)
+        }
+    }
+
+    /// Real iPhones / iPads via `devicectl`. Kept separate from
+    /// `listIOS` (Simulators) because the two answer different
+    /// questions and fail independently — a host with no paired phone
+    /// should still list its simulators without a warning.
+    private func listIOSDevices() async -> SideResult {
+        if platform == .ios || platform == .android { return SideResult(devices: [], failed: false) }
+        do {
+            return SideResult(devices: try DeviceCtl().listUnifiedDevices(), failed: false)
+        } catch {
+            // `devicectl` is absent before Xcode 15 and noisy when no
+            // device has ever been paired; neither is worth a warning
+            // on a plain `sim-use devices`.
             return SideResult(devices: [], failed: true)
         }
     }

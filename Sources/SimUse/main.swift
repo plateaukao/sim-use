@@ -6,6 +6,7 @@ import FBControlCore
 import Darwin
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 // MARK: - Main Entry Point
@@ -101,6 +102,7 @@ struct SimUse: AsyncParsableCommand {
             // under `IOSSimCommand` only — the top-level surface only
             // carries verbs that work on both platforms.
             IOSSimCommand.self,
+            IOSDeviceCommand.self,
             AndroidCommand.self,
         ]
     )

@@ -2,8 +2,9 @@
 import Foundation
 
 /// Cross-platform identifier for one connected device sim-use can target —
-/// an iOS Simulator runtime from `simctl list devices`, or an Android
-/// device / emulator from `adb devices`. The two platforms originally
+/// an iOS Simulator runtime from `simctl list devices`, an Android
+/// device / emulator from `adb devices`, or a real iPhone / iPad from
+/// `devicectl list devices`. The two platforms originally
 /// shipped with separate listing commands (`list-simulators`,
 /// `android devices`) and ad-hoc output shapes; `Device` is the unified
 /// row that the top-level `sim-use devices` verb emits so external
@@ -32,6 +33,12 @@ public struct Device: Codable, Equatable, Hashable, Sendable {
     public enum Platform: String, Codable, Sendable, CaseIterable {
         case ios
         case android
+        /// A real iPhone / iPad, driven through the on-device XCUITest
+        /// bridge. Distinct from `.ios` (the Simulator) because the
+        /// transport, the bootstrap, and the usable-state rule all
+        /// differ, and because a user picking a target needs to see
+        /// which is which.
+        case iosDevice = "ios-device"
     }
 
     /// Platform-state strings as the underlying tools emit them.
@@ -46,6 +53,11 @@ public struct Device: Codable, Equatable, Hashable, Sendable {
         public static let androidOnline = "device"
         public static let androidOffline = "offline"
         public static let androidUnauthorized = "unauthorized"
+        /// `devicectl`'s availability wording for a paired, reachable
+        /// device. Its raw output also carries a parenthetical suffix
+        /// ("available (paired)"), which is why the check is a prefix
+        /// match rather than equality.
+        public static let iosDeviceAvailable = "available"
     }
 
     public let udid: String
@@ -104,8 +116,9 @@ public struct Device: Codable, Equatable, Hashable, Sendable {
     /// bridge.
     public var isUsable: Bool {
         switch platform {
-        case .ios:     return state == State.iosBooted
-        case .android: return state == State.androidOnline
+        case .ios:       return state == State.iosBooted
+        case .android:   return state == State.androidOnline
+        case .iosDevice: return state.hasPrefix(State.iosDeviceAvailable)
         }
     }
 }

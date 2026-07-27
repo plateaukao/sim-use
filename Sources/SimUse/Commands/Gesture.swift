@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `gesture` verb. Owns the flag surface
@@ -126,6 +127,8 @@ struct Gesture: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try await executeAndroid()
+        case .iOSDevice:
+            throw IOSDeviceVerbSupport.unsupported("gesture")
         case .iOSSim, .none:
             return try await executeIOSSim()
         }

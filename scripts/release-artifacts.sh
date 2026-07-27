@@ -159,6 +159,27 @@ verify_stage() {
   [[ "$apk_magic" == "PK" ]] \
     || fail "Staged APK at ${apk_path} does not look like a zip file (first 2 bytes != 'PK')"
 
+  # iOSDeviceBackend bundle + bridge-sources contract. Unlike Android,
+  # what ships is the runner's *source project*, not a built artifact:
+  # an XCUITest runner has to be signed by the user's own team, so
+  # `sim-use ios-device init` builds it on their machine. A release
+  # missing this tree fails at init time with "could not find the iOS
+  # bridge project" — the real-device equivalent of shipping without the
+  # APK. Same `.copy("Resources")` shape as AndroidBackend, so the same
+  # `<resource root>/Resources/...` layout applies.
+  local ios_bundle ios_bridge_dir
+  ios_bundle="$stage_dir/SimUse_iOSDeviceBackend.bundle"
+  [[ -d "$ios_bundle" ]] || fail "Stage is missing SimUse_iOSDeviceBackend.bundle (no real-iOS-device support will ship)"
+  ios_bridge_dir="$(bundle_resource_root "$ios_bundle")/Resources/ios-bridge"
+  [[ -d "$ios_bridge_dir" ]] \
+    || fail "Stage is missing the iOS bridge project at ${ios_bridge_dir}. Run scripts/build-ios-bridge.sh then re-stage."
+  [[ -f "$ios_bridge_dir/SimUseDeviceBridge.xcodeproj/project.pbxproj" ]] \
+    || fail "Staged iOS bridge has no Xcode project at ${ios_bridge_dir}/SimUseDeviceBridge.xcodeproj. Run scripts/build-ios-bridge.sh --generate."
+  local ios_bridge_sources
+  ios_bridge_sources="$(find "$ios_bridge_dir/Sources" -name '*.swift' 2>/dev/null | wc -l | tr -d ' ')"
+  (( ios_bridge_sources > 5 )) \
+    || fail "Staged iOS bridge has only ${ios_bridge_sources} Swift sources under ${ios_bridge_dir}/Sources — the tree looks truncated."
+
   verify_arch "$stage_dir/sim-use" "arm64"
   verify_arch "$stage_dir/sim-use" "x86_64"
 

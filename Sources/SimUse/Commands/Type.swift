@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `type` verb. Owns the flag surface and
@@ -80,6 +81,8 @@ struct Type: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -121,4 +124,27 @@ struct Type: SimUseExecutableCommand {
         try AndroidTypeCommand.performType(udid: device.resolved, text: inputText, clear: false)
         return ExecutionResult()
     }
+
+    /// Real-device dispatch. `clear: false` matches the Android
+    /// forwarder: top-level `type` appends, and clearing is the
+    /// namespaced verb's opt-in.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let inputText: String
+        switch (text, useStdin, inputFile) {
+        case (let positional?, false, nil):
+            inputText = positional
+        case (nil, true, nil):
+            inputText = IOSSimTypeCommand.readFromStdin()
+        case (nil, false, let file?):
+            inputText = try IOSSimTypeCommand.readFromFile(file)
+        case (nil, false, nil):
+            throw ValidationError("No input provided. Provide text as argument, or use --stdin, or --file.")
+        default:
+            throw ValidationError("Invalid input configuration.")
+        }
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        try client.type(text: inputText, clear: false)
+        return ExecutionResult()
+    }
+
 }

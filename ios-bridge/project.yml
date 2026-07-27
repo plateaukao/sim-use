@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# XcodeGen spec for the sim-use iOS device bridge.
+#
+# `SimUseDeviceBridge.xcodeproj` is committed so contributors need only
+# Xcode; this file is the regeneration recipe. Re-run after adding,
+# removing, or moving a source file:
+#
+#     brew install xcodegen
+#     cd ios-bridge && xcodegen generate
+#
+# The single target is a **UI-test bundle with no host application**
+# (the WebDriverAgent shape). `xcodebuild build-for-testing` wraps it in
+# a generated `SimUseDeviceBridgeRunner-Runner.app`, which is the process
+# that actually runs on the phone and serves the bridge HTTP API.
+
+name: SimUseDeviceBridge
+
+options:
+  bundleIdPrefix: com.linecorp.simuse
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  minimumXcodeGenVersion: "2.38.0"
+
+settings:
+  base:
+    ALWAYS_SEARCH_USER_PATHS: NO
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_STRICT_OBJC_MSGSEND: YES
+    SWIFT_VERSION: "5.0"
+    # The runner talks to XCUIAutomation private classes through
+    # `NSClassFromString` + `NSSelectorFromString` only; nothing is
+    # linked against a private symbol, so no `-undefined dynamic_lookup`
+    # or weak-link hackery is needed.
+    OTHER_LDFLAGS: ""
+
+targets:
+  SimUseDeviceBridgeRunner:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Sources/SimUseDeviceBridgeRunner
+    info:
+      path: Support/Info.plist
+      properties:
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: sim-use bridge
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundlePackageType: BNDL
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+    settings:
+      base:
+        PRODUCT_NAME: SimUseDeviceBridgeRunner
+        PRODUCT_BUNDLE_IDENTIFIER: com.linecorp.simuse.devicebridge.runner
+        # Bumped together with `BridgeVersion.protocolVersion` in
+        # Sources/.../config/BridgeVersion.swift and the Swift-side
+        # `IOSDeviceBridgeClient.expectedProtocolVersion`.
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+        # iPhone + iPad.
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        # The runner must not be stripped of its test bundle payload.
+        ENABLE_TESTING_SEARCH_PATHS: YES
+        # The XCUIAutomation SPI shims are Objective-C because the calls
+        # pass CGPoint / double arguments that Swift's dynamic-dispatch
+        # escape hatches cannot marshal. See xcui/SimUsePrivateAPI.h.
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/SimUseDeviceBridgeRunner/SimUseDeviceBridgeRunner-Bridging-Header.h
+        SWIFT_INSTALL_OBJC_HEADER: NO
+
+schemes:
+  SimUseDeviceBridgeRunner:
+    build:
+      targets:
+        SimUseDeviceBridgeRunner: [test]
+    test:
+      config: Debug
+      targets:
+        - SimUseDeviceBridgeRunner

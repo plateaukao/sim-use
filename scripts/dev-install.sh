@@ -143,6 +143,15 @@ else
   ./scripts/build-bridge.sh
 fi
 
+# 3b. Stage the iOS device-bridge sources.
+# Unlike the Android bridge there is nothing to compile here: what ships
+# is the runner's Xcode project, which `sim-use ios-device init` builds on
+# the user's machine with their signing team. Staging is just a sync into
+# the SwiftPM resource path, so there is no --skip flag — it costs
+# milliseconds and a release without it cannot drive a real device.
+log "Staging iOS device-bridge sources..."
+./scripts/build-ios-bridge.sh
+
 # 4. Build Viewer SPA.
 if [[ "$SKIP_VIEWER" == "true" ]]; then
   log "Skipping Viewer SPA rebuild (--skip-viewer)"

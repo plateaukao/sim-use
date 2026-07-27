@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `button` verb. Owns the flag surface and
@@ -61,6 +62,8 @@ struct Button: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -99,4 +102,22 @@ struct Button: SimUseExecutableCommand {
         try AndroidButtonCommand.performPress(udid: device.resolved, keyCode: keyCode)
         return ExecutionResult()
     }
+
+    /// Real-device dispatch. `XCUIDevice` exposes home and the volume
+    /// pair publicly and lock through the runner's SPI shim; anything
+    /// else (siri, apple-pay, …) has no device-side equivalent.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        guard let name = buttonType.iosDeviceName else {
+            throw CLIError(errorDescription:
+                "`button \(buttonType.rawValue)` is not supported on real iOS devices. Supported: home, lock, volumeup, volumedown."
+            )
+        }
+        if duration != nil {
+            FileHandle.standardError.write(Data("warning: --duration is ignored on real iOS devices (the button API has no hold semantic)\n".utf8))
+        }
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        try client.button(name)
+        return ExecutionResult()
+    }
+
 }

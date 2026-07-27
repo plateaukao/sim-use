@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `multi-touch` verb. Owns the verb-specific
@@ -123,6 +124,8 @@ struct MultiTouch: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try await executeAndroid()
+        case .iOSDevice:
+            throw IOSDeviceVerbSupport.unsupported("multi-touch")
         case .iOSSim, .none:
             return try await executeIOSSim()
         }

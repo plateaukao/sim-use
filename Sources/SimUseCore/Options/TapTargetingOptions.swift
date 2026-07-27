@@ -139,4 +139,19 @@ public struct TapTargetingOptions: ParsableArguments {
     public var hasExplicitCoordinates: Bool {
         pointX != nil || pointY != nil || point != nil
     }
+
+    /// True when any live-AX selector flag was provided.
+    ///
+    /// Backends that cannot hit-test the accessibility tree at action
+    /// time (the real-device bridge) use this to refuse rather than
+    /// quietly degrade to a stale cached frame.
+    public var hasSelector: Bool {
+        elementID != nil
+            || elementLabel != nil
+            || elementValue != nil
+            || labelContains != nil
+            || labelRegex != nil
+            || elementType != nil
+            || !frameSpecs.isEmpty
+    }
 }

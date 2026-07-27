@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `tap` verb. Owns the verb-specific flag
@@ -113,6 +114,8 @@ struct Tap: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             // .none here means the UDID didn't match either platform
             // shape; defer to iOS so the existing "not booted /
@@ -180,4 +183,23 @@ struct Tap: SimUseExecutableCommand {
         )
         return ExecutionResult(x: Double(result.x), y: Double(result.y))
     }
+
+    /// Real-device dispatch. Only alias and explicit coordinates are
+    /// resolvable here: the AX-selector forms (`--label`, `--id`, …)
+    /// need a live point-query the bridge does not expose, so they get
+    /// a targeted error rather than silently tapping the wrong thing.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        let point = try IOSDeviceTargeting.resolvePoint(
+            alias: alias,
+            x: targeting.pointX,
+            y: targeting.pointY,
+            point: targeting.point,
+            selectorInUse: targeting.hasSelector,
+            udid: device.resolved
+        )
+        try client.tap(x: point.x, y: point.y, durationMilliseconds: duration.map { Int($0 * 1000) })
+        return ExecutionResult(x: point.x, y: point.y)
+    }
+
 }

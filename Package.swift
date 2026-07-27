@@ -83,6 +83,10 @@ let package = Package(
             name: "iOSSimBackend",
             targets: ["iOSSimBackend"]
         ),
+        .library(
+            name: "iOSDeviceBackend",
+            targets: ["iOSDeviceBackend"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
@@ -133,6 +137,31 @@ let package = Package(
                 .copy("Resources"),
             ]
         ),
+        .target(
+            name: "iOSDeviceBackend",
+            dependencies: [
+                "SimUseCore",
+                // For the shared iOS accessibility vocabulary:
+                // `AccessibilityElement`, `OutlineFormatter`,
+                // `ListDetector`, `AccessibilityTargetResolver`. The
+                // device bridge emits the same tree shape the Simulator
+                // does precisely so this stack can be reused verbatim,
+                // which is what keeps `describe-ui` output and every
+                // selector identical across the two.
+                "iOSSimBackend",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            path: "Sources/iOSDeviceBackend",
+            // Resources/ios-bridge holds the runner's Xcode project at
+            // runtime, synced from the top-level `ios-bridge/` by
+            // `scripts/build-ios-bridge.sh`. Copied as a directory so a
+            // `swift build` without that sync still succeeds —
+            // `BridgeRunnerProject.locate` falls back to the checkout
+            // and surfaces a clear error when neither is present.
+            resources: [
+                .copy("Resources"),
+            ]
+        ),
         .executableTarget(
             name: "SimUse",
             dependencies: [
@@ -140,6 +169,7 @@ let package = Package(
                 "SimUseCore",
                 "AndroidBackend",
                 "iOSSimBackend",
+                "iOSDeviceBackend",
                 "FBSimulatorControl",
                 "FBControlCore",
                 "XCTestBootstrap",
@@ -180,6 +210,7 @@ let package = Package(
             exclude: [
                 "SimUseCoreTests",
                 "AndroidBackendTests",
+                "iOSDeviceBackendTests",
             ],
             resources: [
                 .copy("README.md"),
@@ -196,6 +227,11 @@ let package = Package(
             name: "SimUseCoreTests",
             dependencies: ["SimUseCore"],
             path: "Tests/SimUseCoreTests"
+        ),
+        .testTarget(
+            name: "iOSDeviceBackendTests",
+            dependencies: ["iOSDeviceBackend", "SimUseCore"],
+            path: "Tests/iOSDeviceBackendTests"
         ),
         .testTarget(
             name: "AndroidBackendTests",

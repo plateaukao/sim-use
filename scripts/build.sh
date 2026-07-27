@@ -188,10 +188,16 @@ function copy_resource_bundle() {
 # shipped. `SimUse_AndroidBackend.bundle` carries the bundled device-bridge
 # APK so `sim-use android init` can push it to the device — without this
 # stage step the built sim-use silently lacks Android support.
+# `SimUse_iOSDeviceBackend.bundle` carries the iOS bridge's Xcode project,
+# which `sim-use ios-device init` builds on the user's machine (it must be
+# signed with their team, so unlike the APK it cannot be prebuilt) —
+# without it, real-device support fails at init with "could not find the
+# iOS bridge project".
 function copy_all_resource_bundles() {
   local output_base_dir="$1"
   copy_resource_bundle "$output_base_dir" "SimUse_SimUse.bundle"
   copy_resource_bundle "$output_base_dir" "SimUse_AndroidBackend.bundle"
+  copy_resource_bundle "$output_base_dir" "SimUse_iOSDeviceBackend.bundle"
 }
 
 function clone_idb_repo() {

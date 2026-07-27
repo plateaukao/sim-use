@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `paste` verb. Owns the flag surface and
@@ -148,6 +149,8 @@ struct Paste: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try executeAndroid()
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -200,4 +203,23 @@ struct Paste: SimUseExecutableCommand {
         )
         return ExecutionResult()
     }
+
+    /// Real-device dispatch: pasteboard write plus a synthesized Cmd+V,
+    /// the same mechanism the Simulator backend uses.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        if viaMenu {
+            throw CLIError(errorDescription: "--via-menu is Simulator-only. On a real device the bridge delivers Cmd+V directly; pass the text (with --replace to overwrite).")
+        }
+        let inputText = try IOSSimPasteCommand.resolveInputText(
+            text: text, useStdin: useStdin, inputFile: inputFile,
+            logger: nil
+        )
+        guard !inputText.isEmpty else {
+            throw CLIError(errorDescription: "Input text is empty; nothing to paste.")
+        }
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        _ = try client.paste(text: inputText, replace: replace, clipboardOnly: false)
+        return ExecutionResult()
+    }
+
 }

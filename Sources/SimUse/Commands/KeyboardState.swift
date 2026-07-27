@@ -3,6 +3,7 @@ import ArgumentParser
 import Foundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `keyboard-state` verb. Owns the flag
@@ -71,6 +72,8 @@ struct KeyboardState: SimUseExecutableCommand {
 
     func execute() async throws -> ExecutionResult {
         switch PlatformRouter.resolve(udid: device.resolved) {
+        case .iOSDevice:
+            return try executeIOSDevice()
         case .android:
             let state = try AndroidKeyboardStateCommand.performKeyboardState(udid: device.resolved)
             return ExecutionResult(
@@ -113,4 +116,14 @@ struct KeyboardState: SimUseExecutableCommand {
     // daemon routing, the crash-advisory banner, and `Hint:` formatting.
     // Using the default `run()` restores all three and keeps the exit
     // codes identical.
+
+    /// Real-device dispatch. The bridge finds the keyboard by element
+    /// type in the accessibility tree, so there are no key-count
+    /// heuristics to report the way the Simulator path has.
+    private func executeIOSDevice() throws -> ExecutionResult {
+        let client = try IOSDeviceController().client(udid: device.resolved)
+        let state = try client.keyboardState()
+        return ExecutionResult(platform: "ios-device", visible: state.visible)
+    }
+
 }

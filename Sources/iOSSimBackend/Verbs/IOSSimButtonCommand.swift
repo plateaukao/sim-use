@@ -51,6 +51,23 @@ public enum ButtonType: String, CaseIterable, ExpressibleByArgument {
         }
     }
 
+    /// Button name understood by the real-device bridge's `/button`
+    /// endpoint. `XCUIDevice` publishes home and the volume pair and the
+    /// runner's SPI shim adds lock; the Simulator-only HID buttons
+    /// (Apple Pay, Siri, the distinct side button) have no equivalent,
+    /// and `back` / `recents` are Android concepts.
+    public var iosDeviceName: String? {
+        switch self {
+        case .home: return "home"
+        case .lock, .sideButton: return "lock"
+        case .applePay, .siri, .back, .recents: return nil
+        }
+    }
+
+    public static var supportedOnIOSDeviceList: String {
+        Self.allCases.filter { $0.iosDeviceName != nil }.map(\.rawValue).joined(separator: ", ")
+    }
+
     public var description: String {
         switch self {
         case .applePay:   return "Apple Pay button"

@@ -13,6 +13,11 @@ public struct DescribeUIResult: Codable, Equatable, Sendable {
         // either way so the JSON envelope is unaffected.
         case ios
         case android
+        /// A real iPhone / iPad. `raw` follows the same AX tree schema
+        /// as `.ios` — the on-device bridge emits the Simulator's shape
+        /// on purpose — so a consumer that already handles `.ios` needs
+        /// no new parsing, only to accept the extra discriminator.
+        case iosDevice = "ios-device"
     }
 
     public let platform: Platform

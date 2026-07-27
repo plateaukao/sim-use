@@ -6,6 +6,7 @@ import FBSimulatorControl
 import AVFoundation
 import SimUseCore
 import AndroidBackend
+import iOSDeviceBackend
 import iOSSimBackend
 
 /// Top-level cross-platform `record-video` verb. Owns the flag
@@ -73,6 +74,8 @@ struct RecordVideo: SimUseExecutableCommand {
         switch PlatformRouter.resolve(udid: device.resolved) {
         case .android:
             return try await executeAndroid()
+        case .iOSDevice:
+            throw IOSDeviceVerbSupport.unsupported("record-video")
         case .iOSSim, .none:
             return try await executeIOSSim()
         }

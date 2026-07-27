@@ -1,6 +1,6 @@
 ---
 name: sim-use
-description: Drive iOS Simulator and Android emulator/device screens for AI agents. Use when asked to automate a simulator or emulator, tap/swipe/type on a device, describe UI, take a screenshot, or interact with a mobile app.
+description: Drive iOS Simulator, real iPhone/iPad, and Android emulator/device screens for AI agents. Use when asked to automate a simulator, emulator, or connected phone, tap/swipe/type on a device, describe UI, take a screenshot, or interact with a mobile app.
 ---
 
 ## 0. Preflight
@@ -17,7 +17,18 @@ This verifies sim-use is installed, the device is reachable, and the daemon is h
 2. `sim-use devices` — confirm the target device is listed and booted/connected.
 3. `sim-use ui --device <UDID>` — confirm you can read the screen.
 
-`--device` is optional when only one simulator is booted or one daemon is running. For Android, run `sim-use android init --device <serial>` once to install the bridge APK.
+`--device` is optional when only one simulator is booted or one daemon is running.
+
+Per-platform bootstrap:
+
+- **Android** — `sim-use android init --device <serial>` once, to install the bridge APK.
+- **Real iPhone / iPad** — `sim-use ios-device init` **each session**. Unlike Android, the
+  iOS bridge is a live XCUITest session, not an installed app: it ends when the host
+  process stops, the phone reboots, or (on USB-only setups) the cable is pulled.
+  `sim-use ios-device status` tells you whether it is still up; re-run `init` if not.
+  The phone must be **unlocked** when `init` runs, and needs Developer Mode enabled.
+  If `init` reports no signing team, ask the user for their Apple Development team ID
+  rather than guessing — you cannot discover it reliably.
 
 ## 1. The observe-act loop
 
@@ -31,7 +42,7 @@ sim-use ui --device <UDID>
 
 Read the outline. Each element has an `@N` alias and optionally a `#<id>` identifier. List cells carry `#N` (dominant list) or `#N@M` (scoped).
 
-Frames in the JSON output (`--json`: `entries[].frame`, `screen`) are in platform-native units — iOS **points**, Android **pixels**. Key off the envelope's `platform` field before doing math on coordinates across platforms. Always pair `--json` with `--no-raw` — see *Keeping output small* below.
+Frames in the JSON output (`--json`: `entries[].frame`, `screen`) are in platform-native units — iOS **points** (both Simulator and real device), Android **pixels**. Key off the envelope's `platform` field (`ios`, `ios-device`, `android`) before doing math on coordinates across platforms. Always pair `--json` with `--no-raw` — see *Keeping output small* below.
 
 ### Act
 
@@ -96,6 +107,12 @@ Quick symptom index — see `references/pitfalls.md` for detailed recipes.
 | Tap lands but nothing happens | Animation in progress, or element not yet interactive | Add `--pre-delay 0.3` or `--wait-timeout 3` |
 | iOS: `paste` drops text | Soft keyboard only; HID Cmd+V is ignored | Use `paste --via-menu --target-id <id>` |
 | Android: `paste` denied | Background clipboard access blocked | Use `type` instead |
+| Real device: `tap --label` / `--id` errors as unsupported | Live AX selectors need a point-query the on-device bridge doesn't expose | Run `ui` and tap the `@N` alias instead — refusing beats tapping a stale frame on a real phone |
+| Real device: every verb fails with "no bridge session" / "session has ended" | The XCUITest session stopped (host process killed, phone rebooted, cable pulled) | `sim-use ios-device status`, then `sim-use ios-device init` to restart it |
+| Real device: `init` fails with "device is locked" | iOS refuses to launch a test runner on a locked device | Ask the user to unlock the phone; for long sessions set Auto-Lock to Never |
+| Compose Multiplatform app: a field's text is missing from `AXValue` | Compose exposes text-field contents as `AXLabel`; `AXValue` stays nil | Read `AXLabel` — sim-use's own clear/verify paths already check both |
+| Real device: `paste` exits non-zero saying the text didn't reach the field | Expected — iOS does not apply synthesized Cmd+V on real hardware (not a keyboard or alert problem) | The text **is** on the pasteboard. Use `type` for keyboard-producible text, or `paste --clipboard-only` if you only meant to stage it |
+| Real device: `keyboard-state` says `soft (bounds unknown …)` | A third-party keyboard extension is active; it runs out-of-process so its bounds aren't readable | The keyboard *is* up — just don't rely on the occlusion y-value; verify tap targets with `ui` instead |
 | Outline shows `U+FFFC` in label | iOS icon placeholder character | Match with `--label-regex` excluding the prefix |
 | `[i] … covers ~N% of the screen` warning (text output, or `--json` top-level `advisory` key) | The selector resolved to a near-full-screen wrapper (common on Flutter/canvas UIs) and the tap hit its center, likely missing the intended control | Re-run `ui` and target the control via `@N`/`#<id>`, or pass explicit `-x/-y`/`--point` |
 | `[i] Screen orientation could not be confirmed…` / `…coordinates may be stale…` advisory | Device/app is rotated (the `App:` header shows a tag like `(landscape-right)`) and orientation self-calibration couldn't verify the mapping, or the `@N` snapshot predates a rotation | Re-run `ui` and tap again; selectors handle rotation automatically once calibration succeeds. Explicit `-x/-y`/`--point` is always device-native portrait space |

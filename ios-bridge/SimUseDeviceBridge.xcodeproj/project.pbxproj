@@ -1,0 +1,417 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A6F3A729943DAFDBBAB1289 /* InputHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5F9ACE70AA86FFBA403E5D /* InputHandler.swift */; };
+		4A5701B548A8BABFB7A27F41 /* CaptureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A9586A52DFA90AB335750DB /* CaptureHandler.swift */; };
+		50815EE390DF179C0361D3B6 /* FocusedElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48530ED5263D421A0190544B /* FocusedElement.swift */; };
+		62CE8ED1008D9F6C935550F2 /* BridgeTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = F998EF2F010857C9953FD5F7 /* BridgeTestCase.swift */; };
+		7208055B5897BAB47DAD230B /* HTTPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11FC555679FA2746B2B25401 /* HTTPMessage.swift */; };
+		7D38F40ECF1AB9B95FF4DAB9 /* ActionRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFD11C27ED2D3436CB0101F /* ActionRouter.swift */; };
+		7F8E4871D6822D065A31FED5 /* BridgeConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507714641EB5C2D5A41D354A /* BridgeConfig.swift */; };
+		80CF10FAE247662087D50B5C /* KeyboardStateHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FE18983FD2D50D2F93375C /* KeyboardStateHandler.swift */; };
+		96FD010A4DC45959B62091D1 /* SnapshotHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BA1B846B88FED08D5B102D /* SnapshotHandler.swift */; };
+		A3EC97E7C128AED1A1D09F2D /* AXNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A692FE442E3C8881D77C0CF /* AXNode.swift */; };
+		A891FC41AE3F46DD044249E5 /* GestureHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48C164F37C251AF9791CC2E5 /* GestureHandler.swift */; };
+		C204EA9719406EBC6265D8D2 /* PasteHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3F6B665089D790AB8AC684 /* PasteHandler.swift */; };
+		D94E2B4237F4BA5D37BD6468 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94EAF0B75A946E57E8F4163A /* HTTPServer.swift */; };
+		E2B308737586EAA89793D3FC /* Envelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EF1E6B592916143399F02B /* Envelope.swift */; };
+		E4AF1791CFA7DD386472F119 /* SerialWorkQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A0A2779052613D6EAEFCA6 /* SerialWorkQueue.swift */; };
+		EF5885FEB40B13D15D7D853B /* BridgeVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF8D7EE5E37C7719F1F6815F /* BridgeVersion.swift */; };
+		F61C2977BCAEDFB2FBB2CB90 /* SimUsePrivateAPI.m in Sources */ = {isa = PBXBuildFile; fileRef = DAE4A8BA3110FDA78E593AA0 /* SimUsePrivateAPI.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		06A60CCB246A3DBCD07587A8 /* SimUseDeviceBridgeRunner.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SimUseDeviceBridgeRunner.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B3F6B665089D790AB8AC684 /* PasteHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteHandler.swift; sourceTree = "<group>"; };
+		11FC555679FA2746B2B25401 /* HTTPMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPMessage.swift; sourceTree = "<group>"; };
+		12A0A2779052613D6EAEFCA6 /* SerialWorkQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerialWorkQueue.swift; sourceTree = "<group>"; };
+		2A692FE442E3C8881D77C0CF /* AXNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXNode.swift; sourceTree = "<group>"; };
+		2B66DECD96E95DE013323889 /* SimUseDeviceBridgeRunner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SimUseDeviceBridgeRunner-Bridging-Header.h"; sourceTree = "<group>"; };
+		48530ED5263D421A0190544B /* FocusedElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusedElement.swift; sourceTree = "<group>"; };
+		48C164F37C251AF9791CC2E5 /* GestureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GestureHandler.swift; sourceTree = "<group>"; };
+		4E0DCC2E50488C57A071E92A /* SimUsePrivateAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SimUsePrivateAPI.h; sourceTree = "<group>"; };
+		507714641EB5C2D5A41D354A /* BridgeConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeConfig.swift; sourceTree = "<group>"; };
+		5BFD11C27ED2D3436CB0101F /* ActionRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionRouter.swift; sourceTree = "<group>"; };
+		75BA1B846B88FED08D5B102D /* SnapshotHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHandler.swift; sourceTree = "<group>"; };
+		7A9586A52DFA90AB335750DB /* CaptureHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureHandler.swift; sourceTree = "<group>"; };
+		94EAF0B75A946E57E8F4163A /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
+		A2EF1E6B592916143399F02B /* Envelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Envelope.swift; sourceTree = "<group>"; };
+		A7FE18983FD2D50D2F93375C /* KeyboardStateHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardStateHandler.swift; sourceTree = "<group>"; };
+		BF8D7EE5E37C7719F1F6815F /* BridgeVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeVersion.swift; sourceTree = "<group>"; };
+		DAE4A8BA3110FDA78E593AA0 /* SimUsePrivateAPI.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SimUsePrivateAPI.m; sourceTree = "<group>"; };
+		DC5F9ACE70AA86FFBA403E5D /* InputHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputHandler.swift; sourceTree = "<group>"; };
+		F998EF2F010857C9953FD5F7 /* BridgeTestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeTestCase.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0D0E3FC1F690B6640633139B /* model */ = {
+			isa = PBXGroup;
+			children = (
+				2A692FE442E3C8881D77C0CF /* AXNode.swift */,
+			);
+			path = model;
+			sourceTree = "<group>";
+		};
+		220784410DF181C903233590 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				06A60CCB246A3DBCD07587A8 /* SimUseDeviceBridgeRunner.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6658C9065D50947505A10BFC /* SimUseDeviceBridgeRunner */ = {
+			isa = PBXGroup;
+			children = (
+				F998EF2F010857C9953FD5F7 /* BridgeTestCase.swift */,
+				2B66DECD96E95DE013323889 /* SimUseDeviceBridgeRunner-Bridging-Header.h */,
+				E0A6F61969629296D37C9604 /* config */,
+				EDC86A1895C78956510484C4 /* handler */,
+				0D0E3FC1F690B6640633139B /* model */,
+				816D56298A36DA542672D404 /* server */,
+				8BAA661E2D9F7590AF3CBD0E /* xcui */,
+			);
+			path = SimUseDeviceBridgeRunner;
+			sourceTree = "<group>";
+		};
+		816D56298A36DA542672D404 /* server */ = {
+			isa = PBXGroup;
+			children = (
+				5BFD11C27ED2D3436CB0101F /* ActionRouter.swift */,
+				A2EF1E6B592916143399F02B /* Envelope.swift */,
+				11FC555679FA2746B2B25401 /* HTTPMessage.swift */,
+				94EAF0B75A946E57E8F4163A /* HTTPServer.swift */,
+				12A0A2779052613D6EAEFCA6 /* SerialWorkQueue.swift */,
+			);
+			path = server;
+			sourceTree = "<group>";
+		};
+		8BAA661E2D9F7590AF3CBD0E /* xcui */ = {
+			isa = PBXGroup;
+			children = (
+				4E0DCC2E50488C57A071E92A /* SimUsePrivateAPI.h */,
+				DAE4A8BA3110FDA78E593AA0 /* SimUsePrivateAPI.m */,
+			);
+			path = xcui;
+			sourceTree = "<group>";
+		};
+		8C0EE76AC7A0C97B41B9FAA1 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6658C9065D50947505A10BFC /* SimUseDeviceBridgeRunner */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		E0A6F61969629296D37C9604 /* config */ = {
+			isa = PBXGroup;
+			children = (
+				507714641EB5C2D5A41D354A /* BridgeConfig.swift */,
+				BF8D7EE5E37C7719F1F6815F /* BridgeVersion.swift */,
+			);
+			path = config;
+			sourceTree = "<group>";
+		};
+		E3B5F59E12D24A1460D3BBF6 = {
+			isa = PBXGroup;
+			children = (
+				8C0EE76AC7A0C97B41B9FAA1 /* Sources */,
+				220784410DF181C903233590 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EDC86A1895C78956510484C4 /* handler */ = {
+			isa = PBXGroup;
+			children = (
+				7A9586A52DFA90AB335750DB /* CaptureHandler.swift */,
+				48530ED5263D421A0190544B /* FocusedElement.swift */,
+				48C164F37C251AF9791CC2E5 /* GestureHandler.swift */,
+				DC5F9ACE70AA86FFBA403E5D /* InputHandler.swift */,
+				A7FE18983FD2D50D2F93375C /* KeyboardStateHandler.swift */,
+				0B3F6B665089D790AB8AC684 /* PasteHandler.swift */,
+				75BA1B846B88FED08D5B102D /* SnapshotHandler.swift */,
+			);
+			path = handler;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		28DDFBE26CDC0007E999FACB /* SimUseDeviceBridgeRunner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 33B334E816FD282808D9F12B /* Build configuration list for PBXNativeTarget "SimUseDeviceBridgeRunner" */;
+			buildPhases = (
+				7342A3678FEFA8C638C68F66 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimUseDeviceBridgeRunner;
+			packageProductDependencies = (
+			);
+			productName = SimUseDeviceBridgeRunner;
+			productReference = 06A60CCB246A3DBCD07587A8 /* SimUseDeviceBridgeRunner.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1C8C1125A19519C29799AE4A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					28DDFBE26CDC0007E999FACB = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 14F8DD2F035F1CB249FB86F3 /* Build configuration list for PBXProject "SimUseDeviceBridge" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E3B5F59E12D24A1460D3BBF6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 220784410DF181C903233590 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				28DDFBE26CDC0007E999FACB /* SimUseDeviceBridgeRunner */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7342A3678FEFA8C638C68F66 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3EC97E7C128AED1A1D09F2D /* AXNode.swift in Sources */,
+				7D38F40ECF1AB9B95FF4DAB9 /* ActionRouter.swift in Sources */,
+				7F8E4871D6822D065A31FED5 /* BridgeConfig.swift in Sources */,
+				62CE8ED1008D9F6C935550F2 /* BridgeTestCase.swift in Sources */,
+				EF5885FEB40B13D15D7D853B /* BridgeVersion.swift in Sources */,
+				4A5701B548A8BABFB7A27F41 /* CaptureHandler.swift in Sources */,
+				E2B308737586EAA89793D3FC /* Envelope.swift in Sources */,
+				50815EE390DF179C0361D3B6 /* FocusedElement.swift in Sources */,
+				A891FC41AE3F46DD044249E5 /* GestureHandler.swift in Sources */,
+				7208055B5897BAB47DAD230B /* HTTPMessage.swift in Sources */,
+				D94E2B4237F4BA5D37BD6468 /* HTTPServer.swift in Sources */,
+				0A6F3A729943DAFDBBAB1289 /* InputHandler.swift in Sources */,
+				80CF10FAE247662087D50B5C /* KeyboardStateHandler.swift in Sources */,
+				C204EA9719406EBC6265D8D2 /* PasteHandler.swift in Sources */,
+				E4AF1791CFA7DD386472F119 /* SerialWorkQueue.swift in Sources */,
+				F61C2977BCAEDFB2FBB2CB90 /* SimUsePrivateAPI.m in Sources */,
+				96FD010A4DC45959B62091D1 /* SnapshotHandler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		33287292CCCBC89E0FE84550 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		45632C81E39C2D7B7D656DC3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
+				INFOPLIST_FILE = Support/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linecorp.simuse.devicebridge.runner;
+				PRODUCT_NAME = SimUseDeviceBridgeRunner;
+				SDKROOT = iphoneos;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/SimUseDeviceBridgeRunner/SimUseDeviceBridgeRunner-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F486D3D42F1EDBF030373277 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
+				INFOPLIST_FILE = Support/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.linecorp.simuse.devicebridge.runner;
+				PRODUCT_NAME = SimUseDeviceBridgeRunner;
+				SDKROOT = iphoneos;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/SimUseDeviceBridgeRunner/SimUseDeviceBridgeRunner-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FF15805FCE0A92263E9003A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		14F8DD2F035F1CB249FB86F3 /* Build configuration list for PBXProject "SimUseDeviceBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33287292CCCBC89E0FE84550 /* Debug */,
+				FF15805FCE0A92263E9003A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		33B334E816FD282808D9F12B /* Build configuration list for PBXNativeTarget "SimUseDeviceBridgeRunner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45632C81E39C2D7B7D656DC3 /* Debug */,
+				F486D3D42F1EDBF030373277 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1C8C1125A19519C29799AE4A /* Project object */;
+}
