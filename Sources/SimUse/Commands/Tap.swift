@@ -115,7 +115,7 @@ struct Tap: SimUseExecutableCommand {
         case .android:
             return try executeAndroid()
         case .iOSDevice:
-            return try executeIOSDevice()
+            return try await executeIOSDevice()
         case .iOSSim, .none:
             // .none here means the UDID didn't match either platform
             // shape; defer to iOS so the existing "not booted /
@@ -184,19 +184,44 @@ struct Tap: SimUseExecutableCommand {
         return ExecutionResult(x: Double(result.x), y: Double(result.y))
     }
 
-    /// Real-device dispatch. Only alias and explicit coordinates are
-    /// resolvable here: the AX-selector forms (`--label`, `--id`, …)
-    /// need a live point-query the bridge does not expose, so they get
-    /// a targeted error rather than silently tapping the wrong thing.
-    private func executeIOSDevice() throws -> ExecutionResult {
-        let point = try IOSDeviceTargeting.resolvePoint(
-            alias: alias,
-            x: targeting.pointX,
-            y: targeting.pointY,
-            point: targeting.point,
-            selectorInUse: targeting.hasSelector,
-            udid: device.resolved
-        )
+    /// Real-device dispatch. Aliases resolve against the outline cache
+    /// and explicit coordinates pass through; live AX selectors fetch a
+    /// fresh tree at tap time and run the Simulator's resolver over it
+    /// (`--wait-timeout` polls with a fresh fetch per tick). A `#<id>`
+    /// alias combined with `--frame` / `--element-type` goes live like
+    /// the Simulator; a bare alias stays on the fast cache path.
+    private func executeIOSDevice() async throws -> ExecutionResult {
+        let aliasID: String? = alias.flatMap { raw -> String? in
+            if case .id(let value)? = OutlineAliasResolver.parse(raw) { return value }
+            return nil
+        }
+
+        let point: (x: Double, y: Double)
+        var advisory: CommandAdvisory?
+        if targeting.hasSelector, !targeting.hasExplicitCoordinates, alias == nil || aliasID != nil {
+            let live = try await IOSDeviceTargeting.resolveLiveTarget(
+                targeting: targeting,
+                aliasID: aliasID,
+                waitTimeout: timing.waitTimeout,
+                pollInterval: timing.pollInterval,
+                udid: device.resolved,
+                logger: SimUseLogger()
+            )
+            point = live.ui
+            advisory = live.advisory
+        } else {
+            point = try IOSDeviceTargeting.resolvePoint(
+                alias: alias,
+                x: targeting.pointX,
+                y: targeting.pointY,
+                point: targeting.point,
+                udid: device.resolved
+            )
+        }
+
+        if let preDelay = timing.preDelay, preDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(preDelay * 1_000_000_000))
+        }
         if multiTouch.fingers == 2 {
             try IOSDeviceMultiTouchCommand.performTwoFingerHold(
                 udid: device.resolved,
@@ -208,7 +233,10 @@ struct Tap: SimUseExecutableCommand {
             let client = try IOSDeviceController().client(udid: device.resolved)
             try client.tap(x: point.x, y: point.y, durationMilliseconds: duration.map { Int($0 * 1000) })
         }
-        return ExecutionResult(x: point.x, y: point.y)
+        if let postDelay = timing.postDelay, postDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(postDelay * 1_000_000_000))
+        }
+        return ExecutionResult(x: point.x, y: point.y, commandAdvisory: advisory)
     }
 
 }

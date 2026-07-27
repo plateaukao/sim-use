@@ -217,6 +217,14 @@ Supported: `describe-ui` / `ui`, `tap`, `long-press` (including `--fingers 2`),
 hold a touch open across invocations, same as Android), `type`, `screenshot`,
 `keyboard-state`, `button` (home, lock, volume).
 
+Live AX selectors (`--label`, `--id`, `--label-contains`, `--label-regex`,
+`--value`, plus `--element-type` / `--frame` narrowing and `--wait-timeout`
+polling) work on `tap` and `long-press`: each resolution fetches a **fresh**
+accessibility snapshot and runs the same resolver the Simulator uses, so
+nothing ever falls back to a stale cached frame. Budget for it — a snapshot
+walk is 2–4 s on a real phone, per poll tick. The `@N` / `#N` outline aliases
+remain the fast path.
+
 `paste` is **best-effort** on real devices. It reliably puts text on the
 device pasteboard, but whether the synthesized Cmd+V then runs a paste depends
 on the surface: in ordinary apps the key events arrive on the text-input
@@ -240,10 +248,8 @@ keyboard extension active it answers `soft (bounds unknown — out-of-process
 keyboard extension)`: the keyboard is up, but an extension running in its own
 process exposes no elements to read bounds from.
 
-Not yet on real devices: `record-video`, and
-the live AX selectors (`--label`, `--id`, `--element-type`) — those need a
-point-query the bridge does not expose, so they raise a clear error rather than
-falling back to a stale cached frame. Use `describe-ui` aliases (`@3`) instead.
+Not yet on real devices: `record-video` (needs the device screen-recording
+service, a different code path from anything the bridge does).
 
 
 ## Commands

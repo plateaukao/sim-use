@@ -104,7 +104,7 @@ struct LongPress: SimUseExecutableCommand {
         case .android:
             return try executeAndroid()
         case .iOSDevice:
-            return try executeIOSDevice()
+            return try await executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -168,16 +168,41 @@ struct LongPress: SimUseExecutableCommand {
     }
 
     /// Real-device dispatch: a tap with a hold duration, which is what
-    /// long-press is on every backend.
-    private func executeIOSDevice() throws -> ExecutionResult {
-        let point = try IOSDeviceTargeting.resolvePoint(
-            alias: alias,
-            x: targeting.pointX,
-            y: targeting.pointY,
-            point: targeting.point,
-            selectorInUse: targeting.hasSelector,
-            udid: device.resolved
-        )
+    /// long-press is on every backend. Selector resolution mirrors
+    /// `Tap.executeIOSDevice` — live tree fetch for AX selectors, cache
+    /// for aliases, pass-through for explicit coordinates.
+    private func executeIOSDevice() async throws -> ExecutionResult {
+        let aliasID: String? = alias.flatMap { raw -> String? in
+            if case .id(let value)? = OutlineAliasResolver.parse(raw) { return value }
+            return nil
+        }
+
+        let point: (x: Double, y: Double)
+        var advisory: CommandAdvisory?
+        if targeting.hasSelector, !targeting.hasExplicitCoordinates, alias == nil || aliasID != nil {
+            let live = try await IOSDeviceTargeting.resolveLiveTarget(
+                targeting: targeting,
+                aliasID: aliasID,
+                waitTimeout: timing.waitTimeout,
+                pollInterval: timing.pollInterval,
+                udid: device.resolved,
+                logger: SimUseLogger()
+            )
+            point = live.ui
+            advisory = live.advisory
+        } else {
+            point = try IOSDeviceTargeting.resolvePoint(
+                alias: alias,
+                x: targeting.pointX,
+                y: targeting.pointY,
+                point: targeting.point,
+                udid: device.resolved
+            )
+        }
+
+        if let preDelay = timing.preDelay, preDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(preDelay * 1_000_000_000))
+        }
         let hold = duration ?? 1.0
         if multiTouch.fingers == 2 {
             try IOSDeviceMultiTouchCommand.performTwoFingerHold(
@@ -190,7 +215,10 @@ struct LongPress: SimUseExecutableCommand {
             let client = try IOSDeviceController().client(udid: device.resolved)
             try client.tap(x: point.x, y: point.y, durationMilliseconds: Int(hold * 1000))
         }
-        return ExecutionResult(x: point.x, y: point.y)
+        if let postDelay = timing.postDelay, postDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(postDelay * 1_000_000_000))
+        }
+        return ExecutionResult(x: point.x, y: point.y, commandAdvisory: advisory)
     }
 
 }

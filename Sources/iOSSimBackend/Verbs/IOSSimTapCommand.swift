@@ -53,7 +53,9 @@ public struct IOSSimTapCommand: SimUseExecutableCommand {
         Self.frameFilter(from: targeting)
     }
 
-    static func frameFilter(from targeting: TapTargetingOptions) -> AccessibilityTargetResolver.FrameFilter? {
+    // Public because the real-device live-selector path builds the same
+    // filter from the same option group (`IOSDeviceTargeting`).
+    public static func frameFilter(from targeting: TapTargetingOptions) -> AccessibilityTargetResolver.FrameFilter? {
         // Validation guarantees parse success; force-try keeps the
         // execution path free of throws-only-for-validate branches.
         let filter = (try? AccessibilityTargetResolver.FrameFilter(specs: targeting.frameSpecs)) ?? .init()

@@ -107,7 +107,7 @@ Quick symptom index — see `references/pitfalls.md` for detailed recipes.
 | Tap lands but nothing happens | Animation in progress, or element not yet interactive | Add `--pre-delay 0.3` or `--wait-timeout 3` |
 | iOS: `paste` drops text | Soft keyboard only; HID Cmd+V is ignored | Use `paste --via-menu --target-id <id>` |
 | Android: `paste` denied | Background clipboard access blocked | Use `type` instead |
-| Real device: `tap --label` / `--id` errors as unsupported | Live AX selectors need a point-query the on-device bridge doesn't expose | Run `ui` and tap the `@N` alias instead — refusing beats tapping a stale frame on a real phone |
+| Real device: `tap --label` feels slow (~2–4 s, more with `--wait-timeout`) | Live selectors fetch a fresh accessibility snapshot per resolution (and per poll tick) — that walk is expensive on a real phone | Expected. Prefer `@N` / `#N` aliases right after `ui` (instant, cache-backed); reserve selectors for scripted flows and transitions |
 | Real device: every verb fails with "no bridge session" / "session has ended" | The XCUITest session stopped (host process killed, phone rebooted, cable pulled) | `sim-use ios-device status`, then `sim-use ios-device init` to restart it |
 | Real device: `init` fails with "device is locked" | iOS refuses to launch a test runner on a locked device | Ask the user to unlock the phone; for long sessions set Auto-Lock to Never |
 | Compose Multiplatform app: a field's text is missing from `AXValue` | Compose exposes text-field contents as `AXLabel`; `AXValue` stays nil | Read `AXLabel` — sim-use's own clear/verify paths already check both |
