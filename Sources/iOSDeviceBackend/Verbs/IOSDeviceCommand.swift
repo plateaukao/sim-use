@@ -53,6 +53,7 @@ public struct IOSDeviceCommand: ParsableCommand {
             IOSDeviceTypeCommand.self,
             IOSDevicePasteCommand.self,
             IOSDeviceScreenshotCommand.self,
+            IOSDeviceRecordVideoCommand.self,
             IOSDeviceKeyboardStateCommand.self,
             IOSDeviceButtonCommand.self,
         ]

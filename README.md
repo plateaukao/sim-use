@@ -225,6 +225,15 @@ nothing ever falls back to a stale cached frame. Budget for it — a snapshot
 walk is 2–4 s on a real phone, per poll tick. The `@N` / `#N` outline aliases
 remain the fast path.
 
+`record-video` captures over **USB** via CoreMediaIO (the same route as
+QuickTime's iPhone movie recording), so it works even without an `ios-device
+init` session — but not over Wi-Fi; plug the cable in. The first run triggers
+a one-time macOS camera permission prompt for your terminal (macOS treats iOS
+screen capture as camera access). Frames arrive at the device's native
+variable frame rate (`--fps` is ignored, as on Android); `--quality` maps to
+bitrate and `--scale` to output size; rotating the device stops the recording
+(an MP4 track cannot change frame size) and keeps the partial file.
+
 `paste` is **best-effort** on real devices. It reliably puts text on the
 device pasteboard, but whether the synthesized Cmd+V then runs a paste depends
 on the surface: in ordinary apps the key events arrive on the text-input
@@ -248,8 +257,7 @@ keyboard extension active it answers `soft (bounds unknown — out-of-process
 keyboard extension)`: the keyboard is up, but an extension running in its own
 process exposes no elements to read bounds from.
 
-Not yet on real devices: `record-video` (needs the device screen-recording
-service, a different code path from anything the bridge does).
+With that, every cross-platform verb works on real devices.
 
 
 ## Commands

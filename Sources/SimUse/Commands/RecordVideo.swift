@@ -75,7 +75,7 @@ struct RecordVideo: SimUseExecutableCommand {
         case .android:
             return try await executeAndroid()
         case .iOSDevice:
-            throw IOSDeviceVerbSupport.unsupported("record-video")
+            return try await executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -84,6 +84,19 @@ struct RecordVideo: SimUseExecutableCommand {
     private func executeIOSSim() async throws -> ExecutionResult {
         let sub = makeIOSSubcommand()
         return try await sub.execute()
+    }
+
+    /// Real-device dispatch — CoreMediaIO capture over USB, shared with
+    /// `sim-use ios-device record-video`. No bridge session required.
+    private func executeIOSDevice() async throws -> ExecutionResult {
+        let path = try await IOSDeviceRecordVideoCommand.performRecordVideo(
+            udid: device.resolved,
+            fps: fps,
+            quality: quality,
+            scale: scale,
+            output: output
+        )
+        return ExecutionResult(path: path)
     }
 
     /// Construct the backend command and copy every parsed flag across.

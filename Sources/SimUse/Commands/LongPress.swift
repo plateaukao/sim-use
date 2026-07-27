@@ -203,7 +203,7 @@ struct LongPress: SimUseExecutableCommand {
         if let preDelay = timing.preDelay, preDelay > 0 {
             try await Task.sleep(nanoseconds: UInt64(preDelay * 1_000_000_000))
         }
-        let hold = duration ?? 1.0
+        let hold = duration
         if multiTouch.fingers == 2 {
             try IOSDeviceMultiTouchCommand.performTwoFingerHold(
                 udid: device.resolved,

@@ -371,6 +371,29 @@ public final class H264StreamRecorder: Sendable {
         }
     }
 
+    /// Append an already-BGRA pixel buffer whose dimensions match the
+    /// recorder's, bypassing the CGImage draw. Used by the real-device
+    /// capture path, where `AVCaptureVideoDataOutput` already delivers
+    /// BGRA IOSurfaces at the recording size — re-drawing them would
+    /// only burn CPU per frame.
+    public func append(pixelBuffer: CVPixelBuffer, presentationTime: CMTime) throws {
+        try state.withLock { state in
+            guard CVPixelBufferGetWidth(pixelBuffer) == width, CVPixelBufferGetHeight(pixelBuffer) == height else {
+                throw CLIError(errorDescription: """
+                    Frame size \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer)) \
+                    does not match the recording's \(width)x\(height).
+                    """)
+            }
+            try Self.waitUntilReady(
+                isReady: { state.input.isReadyForMoreMediaData },
+                timeout: Self.readinessTimeout
+            )
+            guard state.adaptor.append(pixelBuffer, withPresentationTime: presentationTime) else {
+                throw CLIError(errorDescription: "Failed to append frame: \(state.writer.error?.localizedDescription ?? "Unknown error")")
+            }
+        }
+    }
+
     public func finish() async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             state.withLock { state in
