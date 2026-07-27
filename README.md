@@ -234,6 +234,15 @@ variable frame rate (`--fps` is ignored, as on Android); `--quality` maps to
 bitrate and `--scale` to output size; rotating the device stops the recording
 (an MP4 track cannot change frame size) and keeps the partial file.
 
+> **macOS gates which devices can be captured.** `iOSScreenCaptureAssistant`,
+> the system daemon behind this path, refuses devices it does not recognise —
+> observed with an iPhone 17 Pro (iOS 27) on macOS 26, where the daemon
+> connects to the phone and then publishes no capture device. QuickTime fails
+> identically on such a pairing, which is the quickest way to tell a gated
+> device from a local problem: if QuickTime's *New Movie Recording* source
+> menu cannot see the phone either, no tool on that Mac can record it. The
+> verb detects this and says so rather than hanging.
+
 `paste` is **best-effort** on real devices. It reliably puts text on the
 device pasteboard, but whether the synthesized Cmd+V then runs a paste depends
 on the surface: in ordinary apps the key events arrive on the text-input

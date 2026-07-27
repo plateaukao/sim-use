@@ -80,9 +80,19 @@ public enum IOSDeviceScreenRecorder {
             try await Task.sleep(nanoseconds: 250_000_000)
         } while Date() < deadline
         throw CLIError(errorDescription: """
-            \(udid) is not visible as a screen-capture device. Screen recording needs the \
-            phone on **USB** (a Wi-Fi connection is not enough) and trusted by this Mac — \
-            plug in the cable, tap Trust if prompted, and retry.
+            \(udid) is not visible to macOS as a screen-capture device. In order of likelihood:
+
+              1. The device is not on USB. Screen capture rides CoreMediaIO, which does not \
+            see Wi-Fi-connected phones — plug the cable in, tap Trust if prompted, and retry.
+              2. Another app already holds it (QuickTime, OBS, …). Stop that recording first.
+              3. This macOS does not support screen capture from this device. macOS gates it \
+            per device model/OS pairing, and a phone running a major iOS release newer than \
+            the host macOS can be refused outright.
+
+            Quick way to tell 1/2 from 3: open QuickTime Player → File → New Movie Recording \
+            and look for the device in the camera-source menu. If QuickTime cannot see it \
+            either, it is (3) and no tool on this Mac can record it — use `screenshot`, or \
+            record from the device itself (Control Center → Screen Recording).
             """)
     }
 
