@@ -673,6 +673,106 @@ public struct IOSDeviceGestureCommand: SimUseExecutableCommand {
     }
 }
 
+/// `sim-use ios-device touch` — the atomic down/up form only. The
+/// split form (`--down` alone now, `--up` in a later invocation) is
+/// impossible here for the same reason it is on Android: the XCUITest
+/// synthesized-event API delivers a whole gesture atomically and has
+/// no way to hold a touch open across calls. Rejected with a redirect
+/// to the atomic form, mirroring `AndroidTouchCommand`.
+public struct IOSDeviceTouchCommand: SimUseExecutableCommand {
+    public static let configuration = CommandConfiguration(
+        commandName: "touch",
+        abstract: "Perform an atomic touch down+up at specific coordinates on a real iOS device."
+    )
+
+    @OptionGroup public var device: IOSDeviceOptions
+
+    @Option(name: [.customShort("x"), .customLong("x")], help: "The X coordinate of the touch point (points).")
+    public var pointX: Double
+
+    @Option(name: [.customShort("y"), .customLong("y")], help: "The Y coordinate of the touch point (points).")
+    public var pointY: Double
+
+    @Flag(name: .customLong("down"), help: "Perform touch down event.")
+    public var touchDown: Bool = false
+
+    @Flag(name: .customLong("up"), help: "Perform touch up event.")
+    public var touchUp: Bool = false
+
+    @Option(name: .customLong("delay"), help: "Hold between down and up in seconds.")
+    public var delay: Double?
+
+    @Flag(name: .customLong("json"), help: "Emit the unified `{ok, data: {}}` envelope on success.")
+    public var jsonOutput: Bool = false
+
+    public init() {}
+
+    public struct ExecutionResult: Codable {
+        public init() {}
+    }
+
+    public var simulatorUDIDForDaemon: String? { device.resolved }
+
+    public func validate() throws {
+        guard pointX >= 0, pointY >= 0 else {
+            throw ValidationError("Coordinates must be non-negative values.")
+        }
+        guard touchDown && touchUp else {
+            throw ValidationError(Self.splitFormRedirect(x: pointX, y: pointY, udid: device.resolved))
+        }
+        if let delay {
+            guard delay >= 0 else {
+                throw ValidationError("Delay must be non-negative.")
+            }
+            guard delay <= 10.0 else {
+                throw ValidationError("Delay must not exceed 10 seconds.")
+            }
+        }
+    }
+
+    public mutating func resolveDeferredArguments() throws {
+        try device.resolve()
+    }
+
+    public func execute() async throws -> ExecutionResult {
+        try Self.performTouch(udid: device.resolved, x: pointX, y: pointY, delay: delay)
+        return ExecutionResult()
+    }
+
+    public func format(_ result: ExecutionResult) -> CommandOutput {
+        .line("✓ Touch at (\(Int(pointX.rounded())), \(Int(pointY.rounded()))) completed successfully")
+    }
+
+    /// Reusable device touch entry point; the top-level cross-platform
+    /// `Touch` forwards here. A `delay` of nil is a plain tap — the
+    /// bridge floors the hold at 20 ms so gesture recognisers never see
+    /// a zero-length contact.
+    public static func performTouch(
+        udid: String,
+        x: Double,
+        y: Double,
+        delay: Double?,
+        controller: IOSDeviceController = IOSDeviceController()
+    ) throws {
+        let client = try controller.client(udid: udid)
+        try client.tap(x: x, y: y, durationMilliseconds: delay.map { max(1, Int(($0 * 1000).rounded())) })
+    }
+
+    /// Redirect surfaced when the user passes only `--down` or only
+    /// `--up`. Public so the cross-platform forwarder emits the same
+    /// text. Mirrors `AndroidTouchCommand.splitFormRedirect`.
+    public static func splitFormRedirect(x: Double, y: Double, udid: String) -> String {
+        let xi = Int(x.rounded())
+        let yi = Int(y.rounded())
+        return "Split touch form (--down or --up alone) is not supported on real iOS devices — "
+            + "the on-device synthesized-event API delivers a whole gesture atomically and "
+            + "cannot hold a touch open across invocations. "
+            + "Use the atomic form `sim-use touch --x \(xi) --y \(yi) "
+            + "--down --up --delay <seconds> --device \(udid)` instead, "
+            + "or `sim-use tap` / `sim-use long-press` for the common cases."
+    }
+}
+
 /// `sim-use ios-device multi-touch` — two parallel strokes through the
 /// bridge's `/gesture`, with explicit start / end positions per finger.
 /// Mirrors the Android verb's surface so the top-level cross-platform

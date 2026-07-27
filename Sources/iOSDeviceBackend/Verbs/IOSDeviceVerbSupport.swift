@@ -12,9 +12,6 @@ public enum IOSDeviceVerbSupport {
 
     /// verb → what to suggest instead.
     static let unimplemented: [String: String] = [
-        // `touch` exposes raw down/move/up phases, which the bridge's
-        // one-shot event model cannot hold open across CLI invocations.
-        "touch": "raw touch phases are not available on real devices — the synthesized-event API delivers a whole gesture at once; use `tap`, `long-press`, or `swipe`",
         // Needs the device screen-recording service, a different code
         // path from anything the bridge does today.
         "record-video": "video recording is not available on real devices yet; use `screenshot`",
@@ -26,7 +23,8 @@ public enum IOSDeviceVerbSupport {
             `\(verb)` is not available on real iOS devices: \(detail).
 
             Supported today: describe-ui, tap, long-press, swipe, gesture, \
-            multi-touch, type, paste, screenshot, keyboard-state, button.
+            multi-touch, touch (atomic form), type, paste, screenshot, \
+            keyboard-state, button.
             """)
     }
 }

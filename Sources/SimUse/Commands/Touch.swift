@@ -41,6 +41,9 @@ struct Touch: SimUseExecutableCommand {
             it has no API to keep a stroke open across separate calls.
             `--down` or `--up` alone will exit with a redirect to the
             atomic form.
+          * Real iOS devices — only the atomic form, for the same reason:
+            the on-device synthesized-event API delivers a whole gesture
+            atomically and cannot hold a touch open across invocations.
         """
     )
 
@@ -67,16 +70,29 @@ struct Touch: SimUseExecutableCommand {
 
     mutating func resolveDeferredArguments() throws {
         try device.resolve()
-        if PlatformRouter.looksLikeAndroid(device.resolved) {
-            try rejectAndroidSplitForm()
-        }
-    }
-
-    private func rejectAndroidSplitForm() throws {
-        if !(touchDown && touchUp) {
-            throw ValidationError(AndroidTouchCommand.splitFormRedirect(
-                x: pointX, y: pointY, udid: device.resolved
-            ))
+        // One-shot gesture backends (Android's dispatchGesture, the
+        // real-device synthesized-event API) cannot hold a touch open
+        // across invocations — reject the split form up front with the
+        // backend's own redirect wording. CLIError, not ValidationError:
+        // errors thrown from resolveDeferredArguments bypass
+        // ArgumentParser's message rendering, and a ValidationError
+        // surfaces as the useless "ArgumentParser.ValidationError
+        // error 1" NSError bridge text.
+        switch PlatformRouter.resolve(udid: device.resolved) {
+        case .android:
+            if !(touchDown && touchUp) {
+                throw CLIError(errorDescription: AndroidTouchCommand.splitFormRedirect(
+                    x: pointX, y: pointY, udid: device.resolved
+                ))
+            }
+        case .iOSDevice:
+            if !(touchDown && touchUp) {
+                throw CLIError(errorDescription: IOSDeviceTouchCommand.splitFormRedirect(
+                    x: pointX, y: pointY, udid: device.resolved
+                ))
+            }
+        case .iOSSim, .none:
+            break
         }
     }
 
@@ -98,7 +114,13 @@ struct Touch: SimUseExecutableCommand {
         case .android:
             return try executeAndroid()
         case .iOSDevice:
-            throw IOSDeviceVerbSupport.unsupported("touch")
+            // Split form already rejected in resolveDeferredArguments.
+            try IOSDeviceTouchCommand.performTouch(
+                udid: device.resolved,
+                x: pointX, y: pointY,
+                delay: delay
+            )
+            return ExecutionResult()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }

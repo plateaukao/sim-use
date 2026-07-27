@@ -213,8 +213,9 @@ plugged in.
 
 Supported: `describe-ui` / `ui`, `tap`, `long-press` (including `--fingers 2`),
 `swipe`, `gesture` (scroll / edge-swipe / pinch / rotate presets),
-`multi-touch`, `type`, `screenshot`, `keyboard-state`, `button` (home, lock,
-volume).
+`multi-touch`, `touch` (atomic `--down --up` form only — the split form cannot
+hold a touch open across invocations, same as Android), `type`, `screenshot`,
+`keyboard-state`, `button` (home, lock, volume).
 
 `paste` is **best-effort** on real devices. It reliably puts text on the
 device pasteboard, but whether the synthesized Cmd+V then runs a paste depends
@@ -239,7 +240,7 @@ keyboard extension active it answers `soft (bounds unknown — out-of-process
 keyboard extension)`: the keyboard is up, but an extension running in its own
 process exposes no elements to read bounds from.
 
-Not yet on real devices: `touch`, `record-video`, and
+Not yet on real devices: `record-video`, and
 the live AX selectors (`--label`, `--id`, `--element-type`) — those need a
 point-query the bridge does not expose, so they raise a clear error rather than
 falling back to a stale cached frame. Use `describe-ui` aliases (`@3`) instead.
