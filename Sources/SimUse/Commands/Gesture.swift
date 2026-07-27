@@ -45,6 +45,10 @@ struct Gesture: SimUseExecutableCommand {
             (auto-detected via the bridge). --delta, --steps, --step-ms are
             iOS-HID-specific and silently ignored on Android, since
             dispatchGesture interpolates the stroke internally.
+          * Real iOS devices — coordinates are in points; screen size defaults
+            to the last describe-ui snapshot for the device. --delta, --steps,
+            --step-ms are Simulator-HID-specific and silently ignored (the
+            bridge interpolates strokes at 60 Hz).
         """
     )
 
@@ -128,7 +132,7 @@ struct Gesture: SimUseExecutableCommand {
         case .android:
             return try await executeAndroid()
         case .iOSDevice:
-            throw IOSDeviceVerbSupport.unsupported("gesture")
+            return try await executeIOSDevice()
         case .iOSSim, .none:
             return try await executeIOSSim()
         }
@@ -162,6 +166,31 @@ struct Gesture: SimUseExecutableCommand {
         sub.device = device
         sub.json = json
         return sub
+    }
+
+    /// Real-device dispatch — same body as `sim-use ios-device gesture`.
+    /// Pre/post-delays follow the Android forwarder's `Task.sleep`
+    /// pattern below.
+    private func executeIOSDevice() async throws -> ExecutionResult {
+        if let preDelay, preDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(preDelay * 1_000_000_000))
+        }
+        try IOSDeviceGestureCommand.performGesture(
+            udid: device.resolved,
+            preset: preset,
+            screenWidth: screenWidth,
+            screenHeight: screenHeight,
+            duration: duration,
+            scale: scale,
+            angle: angle,
+            centerX: centerX,
+            centerY: centerY,
+            radius: radius
+        )
+        if let postDelay, postDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(postDelay * 1_000_000_000))
+        }
+        return ExecutionResult()
     }
 
     /// Android dispatch. Pre/post-delays use `Task.sleep` here (rather

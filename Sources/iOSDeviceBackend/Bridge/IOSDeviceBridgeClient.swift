@@ -181,6 +181,15 @@ public final class IOSDeviceBridgeClient: @unchecked Sendable {
         _ = try requestJSON(method: "POST", path: "/gesture", form: ["strokes": strokesJSON], timeout: timeout)
     }
 
+    /// Typed form of `gesture(strokesJSON:)`. Unlike the Android bridge
+    /// (JSON body `{"strokes": [...]}`), this bridge takes the bare
+    /// stroke array as a form field — the array elements themselves are
+    /// byte-identical between the two.
+    public func gesture(strokes: [BridgeStroke], timeout: TimeInterval = 40) throws {
+        let encoded = try JSONEncoder().encode(strokes)
+        try gesture(strokesJSON: String(decoding: encoded, as: UTF8.self), timeout: timeout)
+    }
+
     /// Returns whether the field was actually emptied when `clear` was
     /// requested. The bridge verifies rather than assumes — a partial
     /// clear silently prefixes the new text onto the old.

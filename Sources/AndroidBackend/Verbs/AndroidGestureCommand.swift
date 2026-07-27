@@ -171,30 +171,9 @@ public struct AndroidGestureCommand: SimUseExecutableCommand {
                 radius: radius
             )
             try Self.assertStrokesFitDisplay(presetStrokes, width: width, height: height, preset: preset)
-            let bridgeStrokes: [BridgeStroke] = presetStrokes.map { stroke in
-                switch stroke.curve {
-                case .linear:
-                    return .linear(
-                        startX: stroke.startX, startY: stroke.startY,
-                        endX: stroke.endX, endY: stroke.endY,
-                        startTime: 0, duration: durationMs
-                    )
-                case .arc:
-                    // Sample the arc into a polyline. 16 waypoints
-                    // (`arcWaypointCount`) hold the radius within
-                    // <2% of the true circle for sweeps up to 360°
-                    // and dispatch cleanly through Android's
-                    // GestureDescription.Path renderer. The bridge
-                    // walks the polyline at constant time per segment.
-                    let waypoints: [BridgeStrokePoint] = (0...arcWaypointCount).map { i in
-                        let t = Double(i) / Double(arcWaypointCount)
-                        let p = stroke.point(at: t)
-                        return BridgeStrokePoint(x: p.x, y: p.y)
-                    }
-                    return .polyline(points: waypoints, startTime: 0, duration: durationMs)
-                }
-            }
-            try client.gesture(strokes: bridgeStrokes)
+            // Encoding is shared with the real-iOS-device backend — both
+            // bridges take the same `/gesture` payload.
+            try client.gesture(strokes: GesturePresetStrokeEncoder.strokes(presetStrokes, durationMilliseconds: durationMs))
         } else {
             let coords = preset.coordinates(screenWidth: width, screenHeight: height)
             try client.swipe(
@@ -210,13 +189,6 @@ public struct AndroidGestureCommand: SimUseExecutableCommand {
             Thread.sleep(forTimeInterval: postDelay)
         }
     }
-
-    /// Number of polyline segments used to approximate an arc stroke
-    /// when dispatching rotate presets through the bridge. 16 segments
-    /// keep the max radial deviation under ~2% of the configured
-    /// radius across sweeps up to a full circle, which is well below
-    /// what touch recognisers can resolve.
-    private static let arcWaypointCount = 16
 
     public static func assertStrokesFitDisplay(
         _ strokes: [GesturePreset.Stroke],

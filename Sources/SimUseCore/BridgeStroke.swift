@@ -96,6 +96,13 @@ public struct BridgeStrokePoint: Encodable {
     }
 }
 
-struct BridgeGesturePayload: Encodable {
-    let strokes: [BridgeStroke]
+/// JSON-body wrapper for the Android bridge's `POST /gesture`
+/// (`{"strokes": [...]}`). The iOS device bridge takes the bare stroke
+/// array as a form field instead — see `IOSDeviceBridgeClient.gesture`.
+public struct BridgeGesturePayload: Encodable {
+    public let strokes: [BridgeStroke]
+
+    public init(strokes: [BridgeStroke]) {
+        self.strokes = strokes
+    }
 }

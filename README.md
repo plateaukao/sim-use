@@ -211,8 +211,9 @@ plugged in.
 
 ### Verb coverage
 
-Supported: `describe-ui` / `ui`, `tap`, `long-press`, `swipe`, `type`,
-`screenshot`, `keyboard-state`, `button` (home, lock, volume).
+Supported: `describe-ui` / `ui`, `tap`, `long-press`, `swipe`, `gesture`
+(scroll / edge-swipe / pinch / rotate presets), `type`, `screenshot`,
+`keyboard-state`, `button` (home, lock, volume).
 
 `paste` is **clipboard-only** on real devices. It reliably puts text on the
 device pasteboard, but iOS will not apply a synthesized Cmd+V: those key events
@@ -230,7 +231,7 @@ keyboard extension active it answers `soft (bounds unknown — out-of-process
 keyboard extension)`: the keyboard is up, but an extension running in its own
 process exposes no elements to read bounds from.
 
-Not yet on real devices: `gesture`, `multi-touch`, `touch`, `record-video`, and
+Not yet on real devices: `multi-touch`, `touch`, `record-video`, and
 the live AX selectors (`--label`, `--id`, `--element-type`) — those need a
 point-query the bridge does not expose, so they raise a clear error rather than
 falling back to a stale cached frame. Use `describe-ui` aliases (`@3`) instead.

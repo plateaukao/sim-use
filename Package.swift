@@ -160,6 +160,12 @@ let package = Package(
             // and surfaces a clear error when neither is present.
             resources: [
                 .copy("Resources"),
+            ],
+            // Compiles against iOSSimBackend's swiftmodule, which pulls
+            // in the FB* module interfaces — hence the private module
+            // maps, like every other consumer of that stack.
+            swiftSettings: [
+                .unsafeFlags(privateModuleMapFlags)
             ]
         ),
         .executableTarget(
@@ -231,7 +237,14 @@ let package = Package(
         .testTarget(
             name: "iOSDeviceBackendTests",
             dependencies: ["iOSDeviceBackend", "SimUseCore"],
-            path: "Tests/iOSDeviceBackendTests"
+            path: "Tests/iOSDeviceBackendTests",
+            // Module maps only — all test targets link into the single
+            // package test binary, and SimUseTests already contributes
+            // `fbLinkerFlags`; repeating the force_loads here trips the
+            // Swift task-allocator abort described at the top.
+            swiftSettings: [
+                .unsafeFlags(privateModuleMapFlags)
+            ]
         ),
         .testTarget(
             name: "AndroidBackendTests",

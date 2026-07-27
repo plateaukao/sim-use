@@ -474,3 +474,183 @@ public struct IOSDeviceButtonCommand: SimUseExecutableCommand {
         .line("Pressed \(result.button)")
     }
 }
+
+/// `sim-use ios-device gesture` — preset gesture patterns: single-finger
+/// presets through `/swipe`, pinch / rotate through `/gesture`
+/// multi-stroke dispatch. The stroke encoding is `GesturePresetStrokeEncoder`,
+/// shared with the Android bridge — both accept byte-identical payloads.
+public struct IOSDeviceGestureCommand: SimUseExecutableCommand {
+    public static let configuration = CommandConfiguration(
+        commandName: "gesture",
+        abstract: "Perform a preset gesture pattern on a real iOS device.",
+        discussion: """
+        Same preset vocabulary as the Simulator and Android: scroll-*,
+        swipe-from-*-edge, pinch-in / pinch-out, rotate-cw / rotate-ccw.
+
+        Coordinates are in points, the same space `describe-ui` reports.
+        Screen size defaults to the last `describe-ui` snapshot for this
+        device (or a fresh one when none exists); pass --screen-width /
+        --screen-height to override, e.g. after rotating the device
+        without re-observing.
+        """
+    )
+
+    @OptionGroup public var device: IOSDeviceOptions
+
+    @Argument(help: "The gesture preset to perform.")
+    public var preset: GesturePreset
+
+    @Option(name: .customLong("screen-width"), help: "Screen width in points. Optional — defaults to the last describe-ui snapshot's screen size.")
+    public var screenWidth: Double?
+
+    @Option(name: .customLong("screen-height"), help: "Screen height in points. Optional — defaults to the last describe-ui snapshot's screen size.")
+    public var screenHeight: Double?
+
+    @Option(name: .customLong("duration"), help: "Duration of the gesture in seconds (uses preset default if not specified).")
+    public var duration: Double?
+
+    @Option(name: .customLong("scale"), help: "Pinch scale ratio (end radius / start radius). Defaults: 2.0 for pinch-out, 0.5 for pinch-in. Ignored for non-pinch presets.")
+    public var scale: Double?
+
+    @Option(name: .customLong("angle"), help: "Rotation sweep in degrees for rotate-cw / rotate-ccw. Default 90.0. Ignored for non-rotate presets.")
+    public var angle: Double?
+
+    @Option(name: .customLong("center-x"), help: "Pivot X for pinch / rotate presets (points). Defaults to screen center.")
+    public var centerX: Double?
+
+    @Option(name: .customLong("center-y"), help: "Pivot Y for pinch / rotate presets (points). Defaults to screen center.")
+    public var centerY: Double?
+
+    @Option(name: .customLong("radius"), help: "Start radius for pinch / rotate presets (points). Default 80.")
+    public var radius: Double?
+
+    @Flag(name: .customLong("json"), help: "Emit the unified `{ok, data: {}}` envelope on success.")
+    public var jsonOutput: Bool = false
+
+    public init() {}
+
+    public struct ExecutionResult: Codable {
+        public init() {}
+    }
+
+    public var simulatorUDIDForDaemon: String? { device.resolved }
+
+    public func validate() throws {
+        // Same rules as the other backends' gesture verbs — `--scale`
+        // only on pinch presets, `--angle` only on rotate, range checks
+        // on the geometry knobs. `--delta` / `--steps` / `--step-ms`
+        // are HID-specific and not exposed here.
+        try GesturePreset.validateOptions(
+            preset: preset,
+            screenWidth: screenWidth, screenHeight: screenHeight,
+            duration: duration, delta: nil,
+            scale: scale, angle: angle,
+            centerX: centerX, centerY: centerY, radius: radius,
+            steps: 1, stepMs: nil,
+            preDelay: nil, postDelay: nil
+        )
+    }
+
+    public mutating func resolveDeferredArguments() throws {
+        try device.resolve()
+    }
+
+    public func execute() async throws -> ExecutionResult {
+        try Self.performGesture(
+            udid: device.resolved,
+            preset: preset,
+            screenWidth: screenWidth,
+            screenHeight: screenHeight,
+            duration: duration,
+            scale: scale,
+            angle: angle,
+            centerX: centerX,
+            centerY: centerY,
+            radius: radius
+        )
+        return ExecutionResult()
+    }
+
+    public func format(_ result: ExecutionResult) -> CommandOutput {
+        CommandOutput(stderr: "gesture \(preset.rawValue)\n")
+    }
+
+    /// Reusable device gesture entry point; the top-level cross-platform
+    /// `Gesture` forwards here for real-device UDIDs. Symmetric to
+    /// `AndroidGestureCommand.performGesture`.
+    ///
+    /// Screen-size resolution order:
+    ///   1. explicit `screenWidth` / `screenHeight` arguments
+    ///   2. the outline cache written by the last `describe-ui` — free,
+    ///      and fresh in the observe → act cycle every skill teaches
+    ///   3. a fresh tree snapshot (2–4 s on device) when no cache exists
+    /// We do NOT fall back to the Simulator's 390×844 default — a wrong
+    /// pinch center on a real phone is not recoverable the way it is on
+    /// a simulator.
+    ///
+    /// No display-bounds assertion here, deliberately: Android's
+    /// framework rejects out-of-bounds strokes so that backend
+    /// pre-flights them; iOS clamps silently. Each backend keeps its
+    /// own policy (see `GesturePresetStrokeEncoder`).
+    public static func performGesture(
+        udid: String,
+        preset: GesturePreset,
+        screenWidth: Double?,
+        screenHeight: Double?,
+        duration: Double?,
+        scale: Double? = nil,
+        angle: Double? = nil,
+        centerX: Double? = nil,
+        centerY: Double? = nil,
+        radius: Double? = nil,
+        controller: IOSDeviceController = IOSDeviceController()
+    ) throws {
+        let client = try controller.client(udid: udid)
+
+        let width: Double
+        let height: Double
+        if let screenWidth, let screenHeight {
+            width = screenWidth
+            height = screenHeight
+        } else {
+            (width, height) = try Self.detectScreenSize(udid: udid, client: client)
+        }
+
+        let gestureDuration = duration ?? preset.recommendedDuration(angle: angle)
+        let durationMs = max(1, Int((gestureDuration * 1000).rounded()))
+
+        if preset.isMultiTouch {
+            let presetStrokes = preset.strokes(
+                screenWidth: width, screenHeight: height,
+                scale: scale, angle: angle,
+                centerX: centerX, centerY: centerY,
+                radius: radius
+            )
+            try client.gesture(strokes: GesturePresetStrokeEncoder.strokes(presetStrokes, durationMilliseconds: durationMs))
+        } else {
+            let coords = preset.coordinates(screenWidth: width, screenHeight: height)
+            try client.swipe(
+                startX: coords.startX, startY: coords.startY,
+                endX: coords.endX, endY: coords.endY,
+                durationMilliseconds: durationMs
+            )
+        }
+    }
+
+    static func detectScreenSize(udid: String, client: IOSDeviceBridgeClient) throws -> (width: Double, height: Double) {
+        if
+            let cached = try? OutlineCache.read(udid: udid),
+            cached.screen.width > 0, cached.screen.height > 0
+        {
+            return (Double(cached.screen.width), Double(cached.screen.height))
+        }
+        if let display = try client.fetchTree(filter: true).display {
+            return display
+        }
+        throw CLIError(errorDescription: """
+            Could not determine the device screen size (no cached outline, and the \
+            bridge snapshot reported no display). Run `describe-ui` first or pass \
+            --screen-width / --screen-height.
+            """)
+    }
+}

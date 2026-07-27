@@ -12,11 +12,7 @@ public enum IOSDeviceVerbSupport {
 
     /// verb → what to suggest instead.
     static let unimplemented: [String: String] = [
-        // The bridge's /gesture endpoint exists and works; what is
-        // missing is the host-side translation of the preset vocabulary
-        // (pinch/rotate/zoom) into strokes for this backend.
-        "gesture": "multi-stroke gestures are not wired up for real devices yet; use `swipe` for single-finger drags",
-        "multi-touch": "multi-touch is not wired up for real devices yet; use `swipe` for single-finger drags",
+        "multi-touch": "multi-touch is not wired up for real devices yet; use `swipe` for single-finger drags or `gesture` for pinch / rotate presets",
         // `touch` exposes raw down/move/up phases, which the bridge's
         // one-shot event model cannot hold open across CLI invocations.
         "touch": "raw touch phases are not available on real devices — the synthesized-event API delivers a whole gesture at once; use `tap`, `long-press`, or `swipe`",
@@ -30,8 +26,8 @@ public enum IOSDeviceVerbSupport {
         return CLIError(errorDescription: """
             `\(verb)` is not available on real iOS devices: \(detail).
 
-            Supported today: describe-ui, tap, long-press, swipe, type, paste, \
-            screenshot, keyboard-state, button.
+            Supported today: describe-ui, tap, long-press, swipe, gesture, type, \
+            paste, screenshot, keyboard-state, button.
             """)
     }
 }
